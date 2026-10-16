@@ -1,0 +1,14 @@
+{
+  "name": "Halloween",
+  "emoji": "🎃",
+  "builtin": true,
+  "note": "Original animations made for the crystal ball",
+  "titles": {
+    "01-happy-halloween.mp4": "Happy Halloween",
+    "02-jack-o-lantern.mp4": "Jack-o'-lantern",
+    "03-friendly-ghost.mp4": "Friendly ghost",
+    "04-bats-and-moon.mp4": "Bats and moon",
+    "05-eyes-in-the-dark.mp4": "Eyes in the dark",
+    "06-bubbling-cauldron.mp4": "Bubbling cauldron"
+  }
+}

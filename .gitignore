@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.DS_Store
+__pycache__/
+
+# Rendered by `npm run themes`; reproducible from tools/make_halloween.py
+assets/themes/halloween/*.mp4
+
+# Rendered by `npm run icon`
+assets/icon/icon.iconset/

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src file:"
+    />
+    <title>Crystal Ball Themes</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="titlebar">
+      <h1><span class="orb" aria-hidden="true"></span> Crystal Ball Themes</h1>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+    </header>
+
+    <main>
+      <section id="connect-help" class="connect-help" hidden>
+        <h2>Let’s connect the crystal ball</h2>
+        <ol>
+          <li><strong>Turn it off.</strong> Hold the middle button for 3 seconds.</li>
+          <li><strong>Plug it into this Mac</strong> with a USB data cable.</li>
+          <li><strong>Hold the middle button</strong> until a USB picture shows on the ball.</li>
+        </ol>
+        <p class="hint">Nothing happening? Some cables only charge. Try another one, or a port right on the Mac.</p>
+      </section>
+
+      <div class="section-head">
+        <h2>Themes</h2>
+        <p class="hint">Pick one and press <em>Show on the ball</em>.</p>
+      </div>
+      <div id="themes" class="themes"></div>
+    </main>
+
+    <dialog id="theme-dialog" class="sheet"></dialog>
+    <dialog id="apply-dialog" class="sheet small"></dialog>
+    <dialog id="new-dialog" class="sheet small">
+      <form id="new-form" method="dialog">
+        <h2>New theme</h2>
+        <label class="field">
+          <span>Name</span>
+          <input id="new-name" name="name" maxlength="60" placeholder="e.g. Nightmare Before Christmas" required autocomplete="off" />
+        </label>
+        <fieldset class="emoji-pick" id="new-emoji"></fieldset>
+        <div class="actions">
+          <button type="button" class="btn ghost" data-close>Cancel</button>
+          <button type="submit" class="btn primary">Make theme</button>
+        </div>
+      </form>
+    </dialog>
+    <div id="toasts" class="toasts" aria-live="assertive"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

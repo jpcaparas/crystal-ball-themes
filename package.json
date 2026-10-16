@@ -1,0 +1,25 @@
+{
+  "name": "crystal-ball-themes",
+  "productName": "Crystal Ball Themes",
+  "version": "0.1.0",
+  "description": "Swap themed video sets on a USB 'electronic crystal ball' display (ArtInChip EVDO-M4) without touching its firmware.",
+  "private": true,
+  "author": "JP Caparas <jp@jpcaparas.com>",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "ball": "node src/cli.js",
+    "themes": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/make_halloween.py assets/themes/halloween",
+    "icon": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/make_icon.py assets/icon",
+    "screenshot": "electron . --screenshot=dist/screenshot.png",
+    "package": "electron-packager . \"Crystal Ball Themes\" --platform=darwin --arch=arm64 --out=dist --overwrite --icon=assets/icon/icon.icns --app-bundle-id=com.jpcaparas.crystal-ball-themes --no-asar --ignore=^/tools --ignore=^/test --ignore=^/docs --ignore=^/dist --ignore=^/AGENTS.md --ignore=^/CLAUDE.md"
+  },
+  "engines": {
+    "node": ">=22.19"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^44.8.0"
+  }
+}

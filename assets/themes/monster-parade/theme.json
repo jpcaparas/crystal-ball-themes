@@ -1,0 +1,15 @@
+{
+  "name": "Monster Parade",
+  "emoji": "🧛",
+  "note": "Classic monsters say hello. Spooky, silly, and safe for little ones.",
+  "titles": {
+    "01-count-dracula.mp4": "Count Dracula",
+    "02-headless-horseman.mp4": "The Headless Horseman",
+    "03-frankensteins-creature.mp4": "Frankenstein's Creature",
+    "04-the-mummy.mp4": "The Mummy",
+    "05-the-werewolf.mp4": "The Werewolf",
+    "06-the-witch.mp4": "The Witch",
+    "07-the-friendly-ghost.mp4": "The Friendly Ghost"
+  },
+  "credits": "Art: Gemini Nano Banana 2.1. Voices: Gemini 3.8 Flash TTS."
+}

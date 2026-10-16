@@ -3,6 +3,7 @@
 // Putting a theme on the ball, and working out what is on it now.
 
 const { listBallVideos, writeClips, sha256File } = require('./ball');
+const { ensureMedley, ballNameFor, isBallMedleyName } = require('./medley');
 
 // Ball files are read over USB, so remember their hashes until they change.
 const ballHashCache = new Map();
@@ -13,22 +14,23 @@ async function ballHash(file) {
   return ballHashCache.get(key);
 }
 
-/** Which theme's clips exactly match what's on the ball, if any. */
+/**
+ * Which theme is on the ball: every file belongs to it (a clip or its joined video) and all of
+ * its clips are there.
+ */
 async function whatsOnBall(store, mountPoint) {
   const files = await listBallVideos(mountPoint);
-  if (!files.length) return { count: 0, themeId: null };
+  if (!files.length) return { count: 0, unknown: 0, themeId: null };
   const index = await store.hashIndex();
-  const counts = new Map();
-  let unknown = 0;
-  for (const f of files) {
-    const owners = index.get(await ballHash(f));
-    if (!owners) unknown++;
-    for (const id of new Set((owners || []).map((o) => o.themeId))) counts.set(id, (counts.get(id) || 0) + 1);
-  }
+  const owners = [];
+  for (const f of files) owners.push(index.get(await ballHash(f)) || []);
+  const unknown = owners.filter((o) => !o.length).length;
   let themeId = null;
   if (!unknown) {
     for (const t of await store.list()) {
-      if (t.clips.length === files.length && counts.get(t.id) === files.length) {
+      const allTheirs = owners.every((o) => o.some((x) => x.themeId === t.id));
+      const clips = owners.filter((o) => o.some((x) => x.themeId === t.id && !x.medley)).length;
+      if (allTheirs && clips === t.clips.length) {
         themeId = t.id;
         break;
       }
@@ -38,10 +40,11 @@ async function whatsOnBall(store, mountPoint) {
 }
 
 /**
- * Replace the ball's videos with a theme. Anything on the ball that isn't already in one of
- * our themes is saved first as a "Saved from ball" theme, so nothing is ever lost.
+ * Replace the ball's videos with a theme: its joined "play all" video first, then each clip.
+ * Anything on the ball that isn't already in one of our themes is saved first as a
+ * "Saved from ball" theme, so nothing is ever lost. `makeMedley` is injectable for tests.
  */
-async function applyTheme(store, themeId, mountPoint, onProgress = () => {}) {
+async function applyTheme(store, themeId, mountPoint, onProgress = () => {}, { makeMedley } = {}) {
   const theme = await store.load(themeId);
   if (!theme.clips.length) throw new Error(`“${theme.name}” has no clips yet. Add some first.`);
 
@@ -49,7 +52,10 @@ async function applyTheme(store, themeId, mountPoint, onProgress = () => {}) {
   const onBall = await listBallVideos(mountPoint);
   const index = await store.hashIndex();
   const unknown = [];
-  for (const f of onBall) if (!index.has(await ballHash(f))) unknown.push(f);
+  for (const f of onBall) {
+    // An out-of-date joined video is only a copy of clips we keep, so it needn't be saved.
+    if (!index.has(await ballHash(f)) && !isBallMedleyName(f.name)) unknown.push(f);
+  }
 
   let saved = null;
   if (unknown.length) {
@@ -57,16 +63,39 @@ async function applyTheme(store, themeId, mountPoint, onProgress = () => {}) {
     saved = await store.saveFromBall(unknown);
   }
 
-  const written = await writeClips(mountPoint, theme.clips.map((c) => ({ path: c.path, name: c.file })), onProgress);
+  let medley = null;
+  let warning = null;
+  if (theme.clips.length > 1) {
+    onProgress({ step: 'joining', progress: 0 });
+    try {
+      medley = await ensureMedley(store.dataDir, theme, {
+        make: makeMedley,
+        onProgress: (progress) => onProgress({ step: 'joining', progress }),
+      });
+    } catch (err) {
+      warning = `Couldn’t join the clips into one video (${err.message}), so the ball will repeat the first clip until someone presses the dial.`;
+    }
+  }
+
+  const files = theme.clips.map((c) => ({ path: c.path, name: c.file }));
+  if (medley) files.unshift({ path: medley, name: ballNameFor(store.resolve(themeId).slug) });
+  const written = await writeClips(mountPoint, files, onProgress);
 
   // Read back what landed, so a half-written card never reports success.
   const after = await listBallVideos(mountPoint);
   const landed = written.filter((w) => after.some((a) => a.name === w.name && a.size === w.size));
   if (landed.length !== written.length || after.length !== written.length) {
-    throw new Error(`Only ${landed.length} of ${written.length} clips made it onto the ball. Try again.`);
+    throw new Error(`Only ${landed.length} of ${written.length} videos made it onto the ball. Try again.`);
   }
   ballHashCache.clear();
-  return { themeId, name: theme.name, count: after.length, saved: saved && { id: saved.id, name: saved.name, count: saved.clips.length } };
+  return {
+    themeId,
+    name: theme.name,
+    count: theme.clips.length,
+    playAll: Boolean(medley),
+    warning,
+    saved: saved && { id: saved.id, name: saved.name, count: saved.clips.length },
+  };
 }
 
 module.exports = { applyTheme, whatsOnBall };

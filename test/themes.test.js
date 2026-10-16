@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { ThemeStore, slugify, prettyTitle } = require('../src/lib/themes');
 const { applyTheme, whatsOnBall } = require('../src/lib/apply');
+const { ensureMedley, listMedleys, isBallMedleyName } = require('../src/lib/medley');
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'themes-'));
@@ -47,23 +48,74 @@ test('built-in themes are read-only and ids cannot escape the store', async () =
   assert.deepEqual(t.clips.map((c) => c.file), ['01-pumpkin.mp4', '02-ghost.mp4']);
 });
 
-test('applying a theme saves unknown ball videos first, then recognises the theme on the ball', async () => {
+// Stands in for ffmpeg: the "joined video" is just the clips' bytes back to back.
+const fakeJoin = async (paths, out) => fs.writeFileSync(out, paths.map((p) => fs.readFileSync(p, 'utf8')).join('+'));
+
+test('applying a theme saves unknown ball videos first, puts the joined video first, and recognises the theme', async () => {
   const f = fixture();
   const store = await new ThemeStore({ dataDir: f.data, bundledDir: f.bundled }).init();
   fs.writeFileSync(path.join(f.ball, 'video', 'family.mp4'), 'precious');
 
-  const res = await applyTheme(store, 'builtin/halloween', f.ball);
+  const res = await applyTheme(store, 'builtin/halloween', f.ball, () => {}, { makeMedley: fakeJoin });
   assert.equal(res.count, 2);
+  assert.equal(res.playAll, true);
   assert.equal(res.saved.count, 1);
   const saved = await store.load(res.saved.id);
   assert.equal(fs.readFileSync(saved.clips[0].path, 'utf8'), 'precious');
-  assert.deepEqual(fs.readdirSync(path.join(f.ball, 'video')).sort(), ['01-pumpkin.mp4', '02-ghost.mp4']);
+  assert.deepEqual(fs.readdirSync(path.join(f.ball, 'video')).sort(), ['00-halloween-all.mp4', '01-pumpkin.mp4', '02-ghost.mp4']);
+  assert.equal(fs.readFileSync(path.join(f.ball, 'video', '00-halloween-all.mp4'), 'utf8'), 'pumpkin+ghost');
   assert.equal((await whatsOnBall(store, f.ball)).themeId, 'builtin/halloween');
 
-  // Switching back restores the saved videos; nothing new needs saving.
-  const back = await applyTheme(store, res.saved.id, f.ball);
+  // Switching back restores the saved videos; the joined video is ours, so nothing needs saving.
+  const back = await applyTheme(store, res.saved.id, f.ball, () => {}, { makeMedley: fakeJoin });
   assert.equal(back.saved, null);
+  assert.equal(back.playAll, false); // one clip, nothing to join
   assert.deepEqual(fs.readdirSync(path.join(f.ball, 'video')), ['family.mp4']);
+});
+
+test('an out-of-date joined video on the ball is not saved again', async () => {
+  const f = fixture();
+  const store = await new ThemeStore({ dataDir: f.data, bundledDir: f.bundled }).init();
+  fs.writeFileSync(path.join(f.ball, 'video', '00-halloween-all.mp4'), 'an older join');
+  const res = await applyTheme(store, 'builtin/halloween', f.ball, () => {}, { makeMedley: fakeJoin });
+  assert.equal(res.saved, null);
+});
+
+test('if joining fails, the clips still go on and the family is told why', async () => {
+  const f = fixture();
+  const store = await new ThemeStore({ dataDir: f.data, bundledDir: f.bundled }).init();
+  const res = await applyTheme(store, 'builtin/halloween', f.ball, () => {}, {
+    makeMedley: async () => {
+      throw new Error('no ffmpeg');
+    },
+  });
+  assert.equal(res.playAll, false);
+  assert.match(res.warning, /no ffmpeg/);
+  assert.deepEqual(fs.readdirSync(path.join(f.ball, 'video')).sort(), ['01-pumpkin.mp4', '02-ghost.mp4']);
+});
+
+test('joined videos are cached until the theme changes', async () => {
+  const f = fixture();
+  const store = await new ThemeStore({ dataDir: f.data, bundledDir: f.bundled }).init();
+  let calls = 0;
+  const counting = async (paths, out) => {
+    calls++;
+    await fakeJoin(paths, out);
+  };
+  const t = await store.create('Spooky', '👻');
+  fs.copyFileSync(path.join(f.bundled, 'halloween', '01-pumpkin.mp4'), path.join(t.dir, '01-a.mp4'));
+  fs.copyFileSync(path.join(f.bundled, 'halloween', '02-ghost.mp4'), path.join(t.dir, '02-b.mp4'));
+  const first = await ensureMedley(f.data, await store.load(t.id), { make: counting });
+  assert.equal(await ensureMedley(f.data, await store.load(t.id), { make: counting }), first);
+  assert.equal(calls, 1);
+
+  fs.writeFileSync(path.join(t.dir, '03-c.mp4'), 'cat');
+  const second = await ensureMedley(f.data, await store.load(t.id), { make: counting });
+  assert.notEqual(second, first);
+  assert.equal(calls, 2);
+  assert.deepEqual((await listMedleys(f.data)).map((m) => m.themeId), ['user/spooky']); // old join removed
+  assert.equal(isBallMedleyName('00-spooky-all.mp4'), true);
+  assert.equal(isBallMedleyName('01-a.mp4'), false);
 });
 
 test('an empty theme cannot be applied', async () => {

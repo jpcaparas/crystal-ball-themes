@@ -1,0 +1,328 @@
+"""Render a talking spirit head floating inside the crystal ball.
+
+The ball *is* a crystal ball, so this theme shows a fortune teller's spirit inside it, talking.
+From one picture of the head (made by Gemini with Madame Zara's portrait as a reference) and three
+edited copies (mouth half open, mouth open, eyes closed), this tool:
+
+  - lines each copy up with the original (phase correlation), in case the edit nudged it;
+  - finds the mouth and eyes by diffing the copies against the original, and feathers those regions;
+  - swaps only those regions in time with the voice's loudness (lip-sync) and for random blinks;
+  - "screen"-blends the head over swirling mist so it glows like a projection, floating gently.
+
+Art and voices are cached in assets/sources/<id>/ like the other voiced themes.
+
+Usage:
+  uv run --with pillow --with numpy python tools/spirit_theme.py tools/scripts/spirit-in-the-ball.json
+  ... --only awaken             just matching scenes
+  ... --debug                   also write <out>/masks.png showing the found mouth/eye regions
+  ... --draft --out /tmp/x      cartoon placeholder head + macOS voice, never calls the API
+"""
+
+import argparse
+import json
+import math
+import os
+import random
+import shutil
+import sys
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFilter
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import make_halloween as mh  # noqa: E402
+import voice_theme as vt  # noqa: E402
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+W, FPS, SR = mh.W, mh.FPS, mh.SR
+ART = 1024  # working size of the head pictures
+LEAD, TAIL = 1.4, 1.6
+MOUTH_BOX = (0.30, 0.48, 0.70, 0.84)  # where to look for the mouth (fractions of the picture)
+EYES_BOX = (0.18, 0.24, 0.82, 0.56)
+
+
+def smoothstep(a, b, x):
+    t = min(max((x - a) / (b - a), 0.0), 1.0)
+    return t * t * (3 - 2 * t)
+
+
+# ---------------------------------------------------------------- art
+
+
+def ensure_art(script, src, draft):
+    art = os.path.join(src, "art")
+    os.makedirs(art, exist_ok=True)
+    paths = {"head": os.path.join(art, "head.jpg")}
+    if not os.path.exists(paths["head"]):
+        if draft:
+            draft_face(paths["head"], "head")
+        else:
+            from gemini_media import generate_image
+
+            print("  art: head", flush=True)
+            ref = script.get("reference")  # optional: keeps a character consistent with an existing picture
+            refs = [os.path.join(REPO, "assets", "sources", ref)] if ref else []
+            generate_image(script["head"], paths["head"], refs=refs)
+    for key, prompt in script["variants"].items():
+        paths[key] = os.path.join(art, f"{key}.jpg")
+        if os.path.exists(paths[key]):
+            continue
+        if draft:
+            draft_face(paths[key], key)
+        else:
+            from gemini_media import generate_image
+
+            print(f"  art: {key}", flush=True)
+            generate_image(prompt, paths[key], refs=[paths["head"]])
+    return paths
+
+
+def draft_face(path, kind):
+    """Cartoon stand-in for testing lip-sync without the API."""
+    img = Image.new("RGB", (ART, ART), "black")
+    d = ImageDraw.Draw(img)
+    d.ellipse([312, 230, 712, 760], fill=(150, 120, 210))
+    d.ellipse([300, 180, 724, 420], fill=(90, 40, 140))  # head wrap
+    for ex in (420, 604):
+        if kind == "blink":
+            d.line([(ex - 40, 470), (ex + 40, 470)], fill=(30, 20, 40), width=10)
+        else:
+            d.ellipse([ex - 34, 440, ex + 34, 500], fill=(240, 240, 255))
+            d.ellipse([ex - 14, 456, ex + 14, 484], fill=(30, 20, 40))
+    mouth = {"mouth-mid": (470, 615, 554, 650), "mouth-open": (460, 600, 564, 690)}.get(kind)
+    if mouth:
+        d.ellipse(mouth, fill=(40, 10, 30))
+    else:
+        d.line([(470, 630), (554, 630)], fill=(40, 10, 30), width=10)
+    img.save(path, quality=92)
+
+
+def load(path):
+    img = Image.open(path).convert("RGB")
+    side = min(img.size)
+    img = img.crop(((img.width - side) // 2, (img.height - side) // 2, (img.width + side) // 2, (img.height + side) // 2))
+    return np.asarray(img.resize((ART, ART), Image.LANCZOS), np.float32) / 255.0
+
+
+def align(ref, img):
+    """Shift img so it lines up with ref (phase correlation on a small greyscale copy)."""
+    small = 256
+    k = ART // small
+
+    def g(a):
+        return np.asarray(Image.fromarray((a * 255).astype(np.uint8)).convert("L").resize((small, small)), np.float32)
+
+    fa, fb = np.fft.fft2(g(ref)), np.fft.fft2(g(img))
+    r = np.real(np.fft.ifft2(fa * np.conj(fb) / (np.abs(fa * np.conj(fb)) + 1e-9)))
+    dy, dx = np.unravel_index(np.argmax(r), r.shape)
+    dy = dy - small if dy > small // 2 else dy
+    dx = dx - small if dx > small // 2 else dx
+    return np.roll(img, (int(dy) * k, int(dx) * k), axis=(0, 1)), (int(dy) * k, int(dx) * k)
+
+
+def region_mask(base, var, box):
+    """Feathered elliptical mask around where `var` differs from `base` inside `box`."""
+    d = np.abs(var - base).mean(axis=2)
+    d = np.asarray(Image.fromarray((d * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(6)), np.float32) / 255
+    x0, y0, x1, y1 = (int(v * ART) for v in box)
+    roi = d[y0:y1, x0:x1]
+    t = max(0.05, float(np.percentile(roi, 97)) * 0.5)
+    ys, xs = np.nonzero(roi > t)
+    if len(xs) < 40:
+        return None, None
+    bx0, bx1, by0, by1 = xs.min() + x0, xs.max() + x0, ys.min() + y0, ys.max() + y0
+    px, py = (bx1 - bx0) * 0.22 + 12, (by1 - by0) * 0.3 + 12
+    bbox = (int(bx0 - px), int(by0 - py), int(bx1 + px), int(by1 + py))
+    m = Image.new("L", (ART, ART), 0)
+    ImageDraw.Draw(m).ellipse(bbox, fill=255)
+    m = m.filter(ImageFilter.GaussianBlur(max(8, (bbox[2] - bbox[0]) * 0.12)))
+    return np.asarray(m, np.float32) / 255, bbox
+
+
+class Face:
+    def __init__(self, paths, debug_path=None):
+        self.base = load(paths["head"])
+        self.v = {}
+        self.masks = {}
+        report = []
+        for key in ("mouth-mid", "mouth-open", "blink"):
+            img, shift = align(self.base, load(paths[key]))
+            self.v[key] = img
+            m, bbox = region_mask(self.base, img, EYES_BOX if key == "blink" else MOUTH_BOX)
+            self.masks[key] = m
+            report.append(f"{key}: shift {shift}, region {bbox}")
+        # one mouth mask covering both mouth shapes, so switching between them never shows a seam
+        mm = [m for k, m in self.masks.items() if k != "blink" and m is not None]
+        self.mouth = np.maximum.reduce(mm) if mm else None
+        self.eyes = self.masks["blink"]
+        print("  face: " + "; ".join(report), flush=True)
+        if self.mouth is None:
+            print("  warning: no mouth movement found between the pictures; regenerate the variants", flush=True)
+        if debug_path:
+            vis = (self.base * 255).astype(np.uint8).copy()
+            for m, col in ((self.mouth, (255, 60, 60)), (self.eyes, (60, 200, 255))):
+                if m is not None:
+                    a = (m[..., None] * 0.55)
+                    vis = (vis * (1 - a) + np.array(col) * a).astype(np.uint8)
+            Image.fromarray(vis).save(debug_path)
+
+    def frame(self, loud, blink):
+        f = self.base
+        if self.mouth is not None:
+            mid_w = smoothstep(0.10, 0.30, loud) * (1 - smoothstep(0.42, 0.62, loud))
+            open_w = smoothstep(0.42, 0.62, loud)
+            if mid_w or open_w:
+                f = f + self.mouth[..., None] * (mid_w * (self.v["mouth-mid"] - self.base) + open_w * (self.v["mouth-open"] - self.base))
+        if self.eyes is not None and blink > 0:
+            f = f + self.eyes[..., None] * blink * (self.v["blink"] - f)
+        return np.clip(f, 0, 1)
+
+
+# ---------------------------------------------------------------- scene
+
+
+def noise_layer(seed, size, blur):
+    rng = np.random.default_rng(seed)
+    n = rng.uniform(0, 255, (size // 48, size // 48)).astype(np.uint8)
+    return Image.fromarray(n, "L").resize((size, size), Image.BICUBIC).filter(ImageFilter.GaussianBlur(blur))
+
+
+def screen(a, b):
+    return 1 - (1 - a) * (1 - b)
+
+
+def render_scene(script, scene, face, voice_path, out_path):
+    voice = vt.read_voice(voice_path)
+    vsecs = len(voice) / SR
+    secs = LEAD + vsecs + TAIL
+    n = int(round(secs * FPS))
+    env = vt.envelope(voice, n, LEAD)
+    rnd = random.Random(vt.seed_of(scene["file"]))
+    blinks, t = [], 1.6
+    while t < secs - 0.5:
+        blinks.append(t)
+        t += rnd.uniform(2.4, 4.8)
+
+    bg = np.asarray(mh.radial_bg((40, 18, 70), (3, 2, 8), center=(0.5, 0.55), radius=0.62).convert("RGB"), np.float32) / 255
+    big = int(W * 1.5)
+    mist_a = noise_layer(vt.seed_of(scene["file"] + "a"), big, 50)
+    mist_b = noise_layer(vt.seed_of(scene["file"] + "b"), big, 70)
+    front = noise_layer(vt.seed_of(scene["file"] + "c"), W * 2, 40)
+    sparkles = [(rnd.uniform(0.15, 0.85) * W, rnd.uniform(0.12, 0.88) * W, rnd.uniform(0, 6), rnd.uniform(0.6, 1.6)) for _ in range(30)]
+    glass = Image.new("L", (W, W), 0)
+    ImageDraw.Draw(glass).arc([W * 0.12, W * 0.12, W * 0.88, W * 0.88], 200, 250, fill=255, width=int(W * 0.03))
+    glass = np.asarray(glass.filter(ImageFilter.GaussianBlur(14)), np.float32)[..., None] / 255 * 0.18
+    head_size = int(W * 1.14)  # big enough to read on a 7 cm ball
+    face_y = 0.42  # where her face centre sits in the head picture
+
+    def spun(layer, angle):
+        r = layer.rotate(angle, resample=Image.BILINEAR)
+        o = (big - W) // 2
+        return np.asarray(r.crop((o, o, o + W, o + W)), np.float32)[..., None] / 255
+
+    def render(t):
+        i = min(n - 1, int(t * FPS))
+        e = float(env[i])
+        appear = smoothstep(0.2, 1.3, t) * (1 - smoothstep(secs - 1.1, secs - 0.1, t))
+
+        img = bg.copy()
+        img = screen(img, spun(mist_a, t * 7) * np.array([0.45, 0.25, 0.75]) * 0.55)
+        img = screen(img, spun(mist_b, -t * 5) * np.array([0.15, 0.55, 0.6]) * 0.35)
+        glow = Image.new("L", (W, W), 0)
+        ImageDraw.Draw(glow).ellipse([W * 0.25, W * 0.6, W * 0.75, W * 1.05], fill=int(90 + 90 * e))
+        g = np.asarray(glow.filter(ImageFilter.GaussianBlur(60)), np.float32)[..., None] / 255
+        img = screen(img, g * np.array([0.7, 0.45, 1.0]) * 0.6)
+
+        # the head: lip-synced, blinking, floating, glowing
+        blink = max((max(0.0, 1 - abs((t - b) / 0.09 - 1)) for b in blinks), default=0.0)
+        f = face.frame(e, blink)
+        head = Image.fromarray((f * 255).astype(np.uint8)).rotate(2.2 * math.sin(t * 0.7), resample=Image.BICUBIC)
+        head = head.resize((head_size, head_size), Image.BILINEAR)
+        if appear < 1:
+            head = head.filter(ImageFilter.GaussianBlur(14 * (1 - appear)))
+        layer = Image.new("RGB", (W, W), "black")
+        bob = 10 * math.sin(t * 1.3)
+        layer.paste(head, ((W - head_size) // 2, int(W * 0.47 - face_y * head_size + bob)))
+        h = np.asarray(layer, np.float32) / 255
+        aura = np.asarray(layer.convert("L").filter(ImageFilter.GaussianBlur(28)), np.float32)[..., None] / 255
+        flicker = 0.92 + 0.05 * math.sin(t * 13) + 0.08 * e
+        img = screen(img, aura * np.array([0.35, 0.8, 0.85]) * 0.5 * appear)
+        img = screen(img, h * flicker * appear)
+
+        # mist drifting in front of her neck, sparkles, a glint of glass
+        off = int((t / secs) * W)
+        fm = np.asarray(front.crop((off, 0, off + W, W)), np.float32)[..., None] / 255
+        low = np.linspace(0, 1, W, dtype=np.float32)[:, None, None] ** 1.5
+        img = screen(img, fm * low * np.array([0.6, 0.55, 0.85]) * 0.5)
+        out = Image.fromarray((np.clip(img + glass, 0, 1) * 255).astype(np.uint8)).convert("RGBA")
+        d = ImageDraw.Draw(out)
+        for x, y, ph, sp in sparkles:
+            a = max(0.0, math.sin(t * sp * 2 + ph))
+            if a > 0.1:
+                r = 7 * a
+                c = (255, 235, 255, int(220 * a))
+                d.line([(x - r, y), (x + r, y)], fill=c, width=3)
+                d.line([(x, y - r), (x, y + r)], fill=c, width=3)
+        return mh.finish(out)
+
+    # sound: the voice with a ghostly echo, over a soft pad, wind and a chime as she appears
+    audio = np.zeros((int(secs * SR), 2), np.float32)
+    for f0 in (220.0, 261.63, 329.63):
+        audio += mh.to_stereo(mh.tone(f0, secs, (0.6, 0.2), 1.5, 1.5, vibrato=0.004, vib_rate=0.2) * 0.045)
+    audio += mh.to_stereo(mh.wind(secs, vt.seed_of(scene["file"]) & 0xFF, 0.05))
+    for k, f0 in enumerate((987.77, 1318.5, 1567.98, 1975.53)):
+        mh.place(audio[:, k % 2], mh.tone(f0, 1.6, (1, 0.3), 0.004, 1.4), 0.25 + k * 0.14, 0.07)
+    dry = voice / (np.abs(voice).max() or 1.0) * 0.85
+    wet = dry.copy()
+    for delay, gain, ch in ((0.13, 0.30, 1), (0.26, 0.20, 0), (0.41, 0.13, 1), (0.6, 0.08, 0)):
+        s = int(delay * SR)
+        wet[s:, ch] += dry[: len(dry) - s, ch] * gain
+    i = int(LEAD * SR)
+    j = min(len(audio), i + len(wet))
+    audio[i:j] += wet[: j - i]
+    mh.encode(out_path, secs, render, mh.master(audio, secs, peak=0.8, fade=0.3))
+
+
+# ---------------------------------------------------------------- main
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("script")
+    ap.add_argument("--out")
+    ap.add_argument("--only")
+    ap.add_argument("--debug", action="store_true")
+    ap.add_argument("--draft", action="store_true")
+    args = ap.parse_args()
+
+    with open(args.script, encoding="utf-8") as fh:
+        script = json.load(fh)
+    if args.draft and not args.out:
+        sys.exit("--draft needs --out, so drafts never land in the real theme folders")
+    sid = script["id"]
+    out_dir = args.out or os.path.join(REPO, "assets", "themes", sid)
+    src = os.path.join(args.out, "_draft-sources") if args.draft else os.path.join(REPO, "assets", "sources", sid)
+    os.makedirs(out_dir, exist_ok=True)
+
+    face = Face(ensure_art(script, src, args.draft), os.path.join(out_dir, "masks.png") if args.debug else None)
+    scenes = [s for s in script["scenes"] if not args.only or args.only in s["file"]]
+    for sc in scenes:
+        sc.setdefault("voice", script["voice"])
+        sc.setdefault("style", script["style"])
+        vt.ensure_voice(sc, os.path.join(src, "voice", f"{sc['file']}.flac"), args.draft)
+    for sc in scenes:
+        print(f"rendering {sc['file']}.mp4", flush=True)
+        render_scene(script, sc, face, os.path.join(src, "voice", f"{sc['file']}.flac"), os.path.join(out_dir, f"{sc['file']}.mp4"))
+
+    meta = {"name": script["name"], "emoji": script["emoji"], "note": script["note"],
+            "titles": {f"{s['file']}.mp4": s["title"] for s in script["scenes"]},
+            "credits": "Art: Gemini Nano Banana 2.1. Voice: Gemini 3.8 Flash TTS."}
+    with open(os.path.join(out_dir, "theme.json"), "w", encoding="utf-8") as fh:
+        json.dump(meta, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    if args.draft:
+        shutil.rmtree(src, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    main()

@@ -245,6 +245,11 @@ main {
   padding: 7px 12px;
   background: transparent;
 }
+.card .buttons .row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
 
 .card.new {
   justify-content: center;

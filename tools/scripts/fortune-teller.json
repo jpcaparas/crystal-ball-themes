@@ -1,0 +1,78 @@
+{
+  "id": "fortune-teller",
+  "name": "Fortune Teller",
+  "emoji": "🔮",
+  "note": "Madame Zara peers into her crystal ball and tells your fortune.",
+  "art_style": "Kid-friendly magical storybook illustration, rich painterly style, glowing purple and gold light, full-bleed painting that fills the whole square edge to edge, with no frame, border, ring or circle drawn around it; keep the main subject in the central circle of the picture (the corners will be hidden), dark background, no text, no letters, no logos, no borders, square composition.",
+  "ambience": "mystic",
+  "art": {
+    "zara": "Madame Zara, a warm, mysterious fortune teller with a deep violet head wrap with gold stars, big gold hoop earrings, kind sparkling eyes and a knowing smile, both hands hovering over a softly glowing crystal ball on a velvet table, candles and a starry tent behind her. Original character.",
+    "candy": "A glowing crystal ball showing a mountain of wrapped sweets and lollipops spilling out of a trick-or-treat bucket.",
+    "bucket": "A glowing crystal ball showing a sparkling lolly at the very bottom of a trick-or-treat bucket, like treasure.",
+    "ghost": "A glowing crystal ball showing a tiny friendly ghost happily hugging a chocolate bar.",
+    "pumpkin": "A glowing crystal ball showing a jack-o'-lantern with a huge happy smile, surrounded by autumn leaves.",
+    "brave": "A glowing crystal ball showing a small child in a superhero cape standing tall under a full moon, with glowing stars around them.",
+    "laugh": "A glowing crystal ball showing a family on a sofa laughing so hard they hold their tummies, popcorn flying.",
+    "costume": "A glowing crystal ball showing a street of trick-or-treaters in costumes, with one costume shining with a golden spotlight.",
+    "share": "A glowing crystal ball showing two children happily swapping sweets on a doorstep.",
+    "dreams": "A glowing crystal ball showing a cosy bedroom at night, a sleeping child, a crescent moon and drifting stars."
+  },
+  "voice": "Sulafat",
+  "style": "mysterious, warm and theatrical fortune teller, hushed and dramatic, with knowing pauses and a twinkle of humour",
+  "scenes": [
+    {
+      "file": "01-welcome",
+      "title": "A sweet future",
+      "shots": ["zara", "candy"],
+      "line": "Welcome, traveller... <short pause> Madame Zara sees... <long pause> a great big bag of candy in your future!"
+    },
+    {
+      "file": "02-treasure",
+      "title": "Hidden treasure",
+      "shots": ["zara", "bucket"],
+      "line": "The spirits whisper to me... <whispers> the very best lolly is hiding at the bottom of your bucket."
+    },
+    {
+      "file": "03-ghost",
+      "title": "A ghostly friend",
+      "shots": ["zara", "ghost"],
+      "line": "I see... a little ghost following you home. <short pause> Do not worry. <chuckle> It only wants a chocolate."
+    },
+    {
+      "file": "04-pumpkin",
+      "title": "Bright orange",
+      "shots": ["zara", "pumpkin"],
+      "line": "Your future is... <short pause> bright orange! <laugh> You will meet a pumpkin with a very big smile."
+    },
+    {
+      "file": "05-brave",
+      "title": "Braver than you think",
+      "shots": ["zara", "brave"],
+      "line": "The crystal ball says... you are braver than you think. <short pause> Braver than a vampire at the dentist!"
+    },
+    {
+      "file": "06-laughter",
+      "title": "Big laughs",
+      "shots": ["zara", "laugh"],
+      "line": "Ooh, I see... someone in your house will laugh so hard they snort! <snort> <giggle> Oh. That was me."
+    },
+    {
+      "file": "07-costume",
+      "title": "Best costume",
+      "shots": ["zara", "costume"],
+      "line": "The stars have spoken... <short pause> tonight, yours is the coolest costume on the whole street."
+    },
+    {
+      "file": "08-sharing",
+      "title": "Sharing is magic",
+      "shots": ["zara", "share"],
+      "line": "Madame Zara sees... <long pause> sticky fingers! <giggle> Remember to share your treats, darling."
+    },
+    {
+      "file": "09-sweet-dreams",
+      "title": "Sweet dreams",
+      "shots": ["zara", "dreams"],
+      "line": "The mists are clearing... and I see sweet dreams, full tummies, and a very happy Halloween. <sigh> Farewell!"
+    }
+  ]
+}

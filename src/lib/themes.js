@@ -12,6 +12,7 @@ const fsp = fs.promises;
 const path = require('node:path');
 const { sha256File, plainCopy } = require('./ball');
 const { convert } = require('./convert');
+const { listMedleys } = require('./medley');
 
 const META = 'theme.json';
 const CLIP_EXT = '.mp4';
@@ -209,20 +210,26 @@ class ThemeStore {
     return this.load(theme.id);
   }
 
-  /** sha256 -> [{ themeId, file }] for every clip we have, cached by path + size + mtime. */
+  /**
+   * sha256 -> [{ themeId, file, medley }] for every clip and joined "play all" video we have,
+   * cached by path + size + mtime.
+   */
   async hashIndex() {
     const cache = await readJson(this.hashCacheFile, {});
     const fresh = {};
     const index = new Map();
+    const add = async (filePath, themeId, file, medley) => {
+      const st = await fsp.stat(filePath);
+      const hit = cache[filePath];
+      const sha = hit && hit.size === st.size && hit.mtimeMs === st.mtimeMs ? hit.sha : await sha256File(filePath);
+      fresh[filePath] = { size: st.size, mtimeMs: st.mtimeMs, sha };
+      if (!index.has(sha)) index.set(sha, []);
+      index.get(sha).push({ themeId, file, medley });
+    };
     for (const theme of await this.list()) {
-      for (const c of theme.clips) {
-        const hit = cache[c.path];
-        const sha = hit && hit.size === c.size && hit.mtimeMs === c.mtimeMs ? hit.sha : await sha256File(c.path);
-        fresh[c.path] = { size: c.size, mtimeMs: c.mtimeMs, sha };
-        if (!index.has(sha)) index.set(sha, []);
-        index.get(sha).push({ themeId: theme.id, file: c.file });
-      }
+      for (const c of theme.clips) await add(c.path, theme.id, c.file, false);
     }
+    for (const m of await listMedleys(this.dataDir)) await add(m.path, m.themeId, m.file, true);
     await writeJson(this.hashCacheFile, fresh);
     return index;
   }

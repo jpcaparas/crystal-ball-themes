@@ -2,7 +2,7 @@
 
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
-const EVENTS = new Set(['ball:status', 'apply:progress', 'convert:progress']);
+const EVENTS = new Set(['ball:status', 'apply:progress', 'convert:progress', 'preview:show']);
 
 // ipcRenderer.invoke wraps errors as "Error invoking remote method 'x': Error: msg"; keep just msg.
 async function invoke(channel, ...args) {
@@ -16,6 +16,8 @@ async function invoke(channel, ...args) {
 contextBridge.exposeInMainWorld('ballApi', {
   info: () => invoke('app:info'),
   listThemes: () => invoke('themes:list'),
+  getTheme: (id) => invoke('themes:get', id),
+  openPreview: (id) => invoke('preview:open', id),
   createTheme: (name, emoji) => invoke('themes:create', name, emoji),
   updateTheme: (id, changes) => invoke('themes:update', id, changes),
   removeTheme: (id) => invoke('themes:remove', id),

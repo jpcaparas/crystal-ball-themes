@@ -3,8 +3,14 @@ dist/
 .DS_Store
 __pycache__/
 
-# Rendered by `npm run themes`; reproducible from tools/make_halloween.py
-assets/themes/halloween/*.mp4
+# Rendered by `npm run themes`; reproducible from tools/ (voiced themes from assets/sources/)
+assets/themes/*/*.mp4
+
+# Your Gemini key for tools/gemini_media.py
+.env
 
 # Rendered by `npm run icon`
 assets/icon/icon.iconset/
+
+# Some global gitignores exclude agent instruction files; this repo ships AGENTS.md on purpose
+!AGENTS.md

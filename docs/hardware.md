@@ -68,10 +68,15 @@ Taken from the factory demos (`星空*.mp4`, muxed by `Lavf52.104.0`):
 The `IMG_*` clips on the ball were H.264 **Main** profile at ~3 Mb/s with 320 kb/s MP3, so the
 decoder accepts more than Baseline. Baseline is used anyway as the safe choice.
 
-Assumptions not yet verified on the device:
-- clips play in file-name order (the app names them `01-…`, `02-…`);
-- the player loops the whole folder;
-- a video with no audio track would play (the app always adds a silent MP3 track, like the factory files).
+Observed on the device (2026-10-17):
+- **The player repeats the current file.** It does not move on to the next clip by itself; the
+  dial's left/right buttons do. With six separate clips on the ball it showed the first one forever.
+  The app therefore puts a joined "play all" video first (`00-<theme>-all.mp4`).
+- It starts with the first file. Name order and write order are the same here (`00-`, `01-`, …), so
+  which of the two the firmware uses is still unknown.
+
+Not yet verified:
+- whether a video with no audio track plays (the app always adds a silent MP3 track, like the factory files).
 
 ## macOS quirks
 

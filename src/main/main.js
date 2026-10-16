@@ -15,8 +15,10 @@ const args = process.argv.slice(1);
 const flag = (name) => args.find((a) => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=');
 const screenshotPath = flag('screenshot');
 const openTheme = flag('open');
+const previewArg = flag('preview');
 
 let win = null;
+let preview = null;
 let store = null;
 let ball = { mounted: false, usbSeen: false };
 let onBall = null;
@@ -67,6 +69,11 @@ function handle(channel, fn) {
 function registerIpc() {
   handle('app:info', () => ({ ffmpeg: Boolean(tools().ffmpeg), dataDir: store.dataDir, version: app.getVersion() }));
   handle('themes:list', async () => (await store.list()).map(forRenderer));
+  handle('themes:get', async (id) => forRenderer(await store.load(id)));
+  handle('preview:open', (id) => {
+    openPreview(id);
+    return true;
+  });
   handle('themes:create', async (name, emoji) => forRenderer(await store.create(name, emoji)));
   handle('themes:update', async (id, changes) => forRenderer(await store.update(id, changes)));
   handle('themes:remove', async (id) => {
@@ -133,6 +140,49 @@ function registerIpc() {
   });
 }
 
+const secureWebPreferences = () => ({
+  preload: path.join(__dirname, 'preload.js'),
+  contextIsolation: true,
+  sandbox: true,
+  nodeIntegration: false,
+});
+
+function lockDown(w) {
+  // Dropping a file on a window must never navigate away from the app.
+  w.webContents.on('will-navigate', (e) => e.preventDefault());
+  w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+}
+
+/** A floating, see-through crystal ball on the desktop that plays a theme like the real one. */
+function openPreview(themeId) {
+  store.resolve(themeId); // reject anything that isn't a theme id
+  if (preview && !preview.isDestroyed()) {
+    preview.webContents.send('preview:show', themeId);
+    preview.show();
+    return preview;
+  }
+  preview = new BrowserWindow({
+    width: 380,
+    height: 440,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    alwaysOnTop: true,
+    hasShadow: false,
+    title: 'Crystal Ball Preview',
+    backgroundColor: '#00000000',
+    webPreferences: secureWebPreferences(),
+  });
+  lockDown(preview);
+  preview.loadFile(path.join(__dirname, '..', 'renderer', 'preview.html'), { hash: `theme=${themeId}` });
+  preview.on('closed', () => {
+    preview = null;
+  });
+  return preview;
+}
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1080,
@@ -143,23 +193,18 @@ function createWindow() {
     backgroundColor: '#14091f',
     titleBarStyle: 'hiddenInset',
     show: false,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      sandbox: true,
-      nodeIntegration: false,
-    },
+    webPreferences: secureWebPreferences(),
   });
-  // Dropping a file on the window must never navigate away from the app.
-  win.webContents.on('will-navigate', (e) => e.preventDefault());
-  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  lockDown(win);
+  win.on('closed', () => preview?.close());
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'), openTheme ? { hash: `theme=${openTheme}` } : {});
   win.once('ready-to-show', () => win.show());
 
   if (screenshotPath) {
     win.webContents.once('did-finish-load', () => {
+      const target = previewArg ? openPreview(previewArg) : win;
       setTimeout(async () => {
-        const image = await win.webContents.capturePage();
+        const image = await target.webContents.capturePage();
         fs.mkdirSync(path.dirname(path.resolve(screenshotPath)), { recursive: true });
         fs.writeFileSync(path.resolve(screenshotPath), image.toPNG());
         app.quit();

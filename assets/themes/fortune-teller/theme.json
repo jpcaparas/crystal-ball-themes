@@ -1,0 +1,17 @@
+{
+  "name": "Fortune Teller",
+  "emoji": "🔮",
+  "note": "Madame Zara peers into her crystal ball and tells your fortune.",
+  "titles": {
+    "01-welcome.mp4": "A sweet future",
+    "02-treasure.mp4": "Hidden treasure",
+    "03-ghost.mp4": "A ghostly friend",
+    "04-pumpkin.mp4": "Bright orange",
+    "05-brave.mp4": "Braver than you think",
+    "06-laughter.mp4": "Big laughs",
+    "07-costume.mp4": "Best costume",
+    "08-sharing.mp4": "Sharing is magic",
+    "09-sweet-dreams.mp4": "Sweet dreams"
+  },
+  "credits": "Art: Gemini Nano Banana 2.1. Voices: Gemini 3.8 Flash TTS."
+}

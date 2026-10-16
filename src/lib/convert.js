@@ -133,29 +133,39 @@ async function prepareInput(input) {
   return { file: out, cleanup: () => fsp.rm(dir, { recursive: true, force: true }) };
 }
 
+function requireFfmpeg() {
+  const t = tools();
+  if (!t.ffmpeg) throw new Error('ffmpeg is not installed. Install it with: brew install ffmpeg');
+  return t;
+}
+
+/** Run ffmpeg with `-progress pipe:1`, reporting 0..1 against `total` seconds. */
+function runFfmpeg(ffmpeg, args, { total, label, onProgress = () => {} }) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(ffmpeg, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    let err = '';
+    child.stdout.on('data', (buf) => {
+      const m = String(buf).match(/out_time_us=(\d+)/g);
+      if (m && total) onProgress(Math.min(1, Number(m.at(-1).split('=')[1]) / 1e6 / total));
+    });
+    child.stderr.on('data', (buf) => (err += buf));
+    child.on('error', reject);
+    child.on('close', (code) =>
+      code === 0 ? resolve() : reject(new Error(`Couldn't ${label}: ${err.trim().split('\n').at(-1) || code}`)),
+    );
+  });
+}
+
 /** Convert one file. onProgress receives 0..1. */
 async function convert(input, output, { fit = 'fill', onProgress = () => {} } = {}) {
-  const { ffmpeg, ffprobe } = tools();
-  if (!ffmpeg) throw new Error('ffmpeg is not installed. Install it with: brew install ffmpeg');
+  const { ffmpeg, ffprobe } = requireFfmpeg();
   const prepared = await prepareInput(input);
   try {
     const info = await probe(prepared.file, ffprobe);
     if (info.kind === 'video' && info.hasVideo === false) throw new Error(`${path.basename(input)} has no picture.`);
     const total = info.kind === 'image' ? IMAGE_SECONDS : info.kind === 'gif' ? GIF_MIN_SECONDS : info.duration;
     const args = buildArgs({ input: prepared.file, output, info, fit });
-    await new Promise((resolve, reject) => {
-      const child = spawn(ffmpeg, args, { stdio: ['ignore', 'pipe', 'pipe'] });
-      let err = '';
-      child.stdout.on('data', (buf) => {
-        const m = String(buf).match(/out_time_us=(\d+)/g);
-        if (m && total) onProgress(Math.min(1, Number(m.at(-1).split('=')[1]) / 1e6 / total));
-      });
-      child.stderr.on('data', (buf) => (err += buf));
-      child.on('error', reject);
-      child.on('close', (code) =>
-        code === 0 ? resolve() : reject(new Error(`Couldn't convert ${path.basename(input)}: ${err.trim().split('\n').at(-1) || code}`)),
-      );
-    });
+    await runFfmpeg(ffmpeg, args, { total, label: `convert ${path.basename(input)}`, onProgress });
     onProgress(1);
     return info;
   } catch (e) {
@@ -166,4 +176,57 @@ async function convert(input, output, { fit = 'fill', onProgress = () => {} } = 
   }
 }
 
-module.exports = { SIZE, INSCRIBED, IMAGE_SECONDS, tools, findTool, kindOf, probe, frameFilter, buildArgs, convert };
+/**
+ * Join clips into one file. The ball repeats whichever file it is playing instead of moving on,
+ * so a theme's clips joined together is the only way to show them all without pressing buttons.
+ * Inputs are re-encoded (not stream-copied) so clips from different sources still join cleanly.
+ * `inputs` is [{ path, hasAudio, duration }].
+ */
+function buildMedleyArgs(inputs, output) {
+  const head = ['-y', '-hide_banner', '-loglevel', 'error', '-nostats', '-progress', 'pipe:1'];
+  const parts = inputs.map((inp, i) => {
+    const video = `[${i}:v:0]${frameFilter('fill')},fps=30,format=yuv420p[v${i}]`;
+    const audio = inp.hasAudio
+      ? `[${i}:a:0]aresample=44100,aformat=sample_fmts=fltp:channel_layouts=stereo[a${i}]`
+      : `aevalsrc=0:s=44100:c=stereo:d=${(inp.duration || 1).toFixed(3)}[a${i}]`;
+    return `${video};${audio}`;
+  });
+  const chain = inputs.map((_, i) => `[v${i}][a${i}]`).join('');
+  return [
+    ...head,
+    ...inputs.flatMap((inp) => ['-i', inp.path]),
+    '-filter_complex', `${parts.join(';')};${chain}concat=n=${inputs.length}:v=1:a=1[v][a]`,
+    '-map', '[v]', '-map', '[a]',
+    ...VIDEO_OUT, ...AUDIO_OUT, '-map_metadata', '-1', output,
+  ];
+}
+
+async function makeMedley(paths, output, { onProgress = () => {} } = {}) {
+  const { ffmpeg, ffprobe } = requireFfmpeg();
+  const inputs = [];
+  for (const p of paths) inputs.push({ path: p, ...(await probe(p, ffprobe)) });
+  const total = inputs.reduce((n, i) => n + (i.duration || 0), 0);
+  try {
+    await runFfmpeg(ffmpeg, buildMedleyArgs(inputs, output), { total, label: 'join the clips', onProgress });
+  } catch (e) {
+    await fsp.rm(output, { force: true });
+    throw e;
+  }
+  onProgress(1);
+  return { duration: total };
+}
+
+module.exports = {
+  SIZE,
+  INSCRIBED,
+  IMAGE_SECONDS,
+  tools,
+  findTool,
+  kindOf,
+  probe,
+  frameFilter,
+  buildArgs,
+  convert,
+  buildMedleyArgs,
+  makeMedley,
+};

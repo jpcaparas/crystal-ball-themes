@@ -46,12 +46,18 @@ async function main([cmd = 'status', ...args]) {
   }
   if (cmd === 'apply') {
     const ball = await requireBall();
+    let last = '';
     const res = await applyTheme(store, args[0], ball.mountPoint, (p) => {
       if (p.step === 'copying') console.log(`  copying ${p.index + 1}/${p.total} ${p.name}`);
-      else console.log(`  ${p.step}`);
+      else if (p.step !== last) console.log(`  ${p.step}`);
+      last = p.step;
     });
     if (res.saved) console.log(`Saved ${res.saved.count} clips that were on the ball as "${res.saved.name}".`);
-    console.log(`Done: ${res.count} clips from "${res.name}" are on the ball. Run "npm run ball -- eject" before unplugging.`);
+    if (res.warning) console.log(res.warning);
+    console.log(
+      `Done: ${res.count} clips from "${res.name}" are on the ball${res.playAll ? ', plus a "play all" video first' : ''}.` +
+        ' Run "npm run ball -- eject" before unplugging.',
+    );
     return;
   }
   if (cmd === 'add') {

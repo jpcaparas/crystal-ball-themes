@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src file:"
+    />
+    <title>Preview</title>
+    <link rel="stylesheet" href="preview.css" />
+  </head>
+  <body>
+    <!-- A pretend crystal ball that floats on the desktop and plays a theme like the real one. -->
+    <div class="stand">
+      <div class="ball" id="ball" title="Drag to move">
+        <video id="video" playsinline></video>
+        <div class="glass" aria-hidden="true"></div>
+      </div>
+      <div class="base" aria-hidden="true"></div>
+      <div class="label" id="label" aria-live="polite"></div>
+      <div class="controls" role="toolbar" aria-label="Preview controls">
+        <button id="prev" aria-label="Previous clip">◀</button>
+        <button id="play" aria-label="Pause">❚❚</button>
+        <button id="next" aria-label="Next clip">▶</button>
+        <button id="mute" aria-label="Mute">🔊</button>
+        <button id="close" aria-label="Close preview">✕</button>
+      </div>
+    </div>
+    <script src="preview.js"></script>
+  </body>
+</html>

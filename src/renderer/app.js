@@ -103,7 +103,10 @@
         <p class="meta">${t.clips.length ? `${plural(t.clips.length, 'clip')} · ${mb(t.bytes)}` : 'No clips yet'}${t.builtin ? ' · built in' : ''}</p>
         <div class="buttons">
           <button class="btn primary" data-act="apply">Show on the ball</button>
-          <button class="btn" data-act="open">Open</button>
+          <div class="row">
+            <button class="btn" data-act="preview" ${t.clips.length ? '' : 'disabled title="Add some clips first"'}>▶ Preview</button>
+            <button class="btn" data-act="open">Open</button>
+          </div>
         </div>
       </article>`,
         )
@@ -114,6 +117,7 @@
       const id = card.dataset.id;
       card.querySelector('[data-act="apply"]').onclick = () => applyTheme(id);
       card.querySelector('[data-act="open"]').onclick = () => openTheme(id);
+      card.querySelector('[data-act="preview"]').onclick = () => guard(() => api.openPreview(id));
     });
     $('#new-theme').onclick = () => openNewTheme();
     wirePreviews(grid);
@@ -207,11 +211,13 @@
         ${editable ? '<button class="btn danger" id="delete">Delete theme</button>' : ''}
         <button class="btn" id="reveal">Show in Finder</button>
         <span class="spacer"></span>
+        <button class="btn" id="sheet-preview" ${t.clips.length ? '' : 'disabled'}>▶ Preview</button>
         <button class="btn primary" data-act="apply">Show on the ball</button>
       </div>`;
 
     $('#close-sheet', d).onclick = () => d.close();
     $('#reveal', d).onclick = () => guard(() => api.revealTheme(id));
+    $('#sheet-preview', d).onclick = () => guard(() => api.openPreview(id));
     $('[data-act="apply"]', d).onclick = () => {
       d.close();
       applyTheme(id);
@@ -330,6 +336,7 @@
   const STEP_TEXT = {
     checking: 'Checking what’s on the ball…',
     saving: (p) => `Keeping a copy of ${plural(p.total, 'video')} already on the ball…`,
+    joining: 'Joining the clips into one long show…',
     clearing: 'Making room…',
     copying: (p) => `Copying ${p.index + 1} of ${p.total}…`,
     done: 'Finishing up…',
@@ -354,6 +361,7 @@
     applyUnsub = api.on('apply:progress', (p) => {
       const s = STEP_TEXT[p.step];
       $('#apply-step').textContent = typeof s === 'function' ? s(p) : s;
+      if (p.step === 'joining') $('#apply-bar').style.width = `${Math.round((p.progress || 0) * 100)}%`;
       if (p.step === 'copying') $('#apply-bar').style.width = `${Math.round(((p.index + 1) / p.total) * 100)}%`;
     });
     try {
@@ -364,6 +372,8 @@
           <div class="spinner-orb done"></div>
           <h2>All set! 🎉</h2>
           <p>${plural(res.count, 'clip')} from ${esc(t.name)} are on the ball.</p>
+          ${res.playAll ? '<p>It plays them all, one after another, over and over. The dial still skips to a single clip.</p>' : ''}
+          ${res.warning ? `<p>${esc(res.warning)}</p>` : ''}
           ${res.saved ? `<p>The ${plural(res.saved.count, 'video')} that were already on it are kept in “${esc(res.saved.name)}”.</p>` : ''}
           <div class="actions">
             <button class="btn" data-close>Not yet</button>

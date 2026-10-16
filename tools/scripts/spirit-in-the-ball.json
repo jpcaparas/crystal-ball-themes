@@ -1,0 +1,42 @@
+{
+  "id": "spirit-in-the-ball",
+  "name": "Spirit in the Ball",
+  "emoji": "🕯️",
+  "note": "Madame Zara's spirit floats inside the crystal ball and chants friendly spooky rhymes.",
+  "reference": "fortune-teller/art/zara.jpg",
+  "head": "Using the woman in the reference picture as the character (Madame Zara: deep violet head wrap with gold stars, gold hoop earrings, kind face), paint only her head and the very top of her neck as a friendly ghostly spirit. Front-facing, looking straight at the viewer, calm and kind, eyes open, lips gently closed. Soft luminous skin with a gentle violet and teal ghostly glow; her neck fades away into thin wisps of mist. Pure solid black background with nothing else in the picture. The head is centred and fills about 55% of the picture height, with plenty of black space all around. Painterly storybook style, magical and kind, not scary. No text, no frame, no border, no crystal ball.",
+  "variants": {
+    "mouth-mid": "Edit this picture. Keep everything exactly the same: same face, same head position and size, same lighting, same black background. Change only her mouth: lips slightly parted, as if in the middle of saying a word.",
+    "mouth-open": "Edit this picture. Keep everything exactly the same: same face, same head position and size, same lighting, same black background. Change only her mouth: open in a round 'oh' shape, as if chanting 'ooooh', showing a small dark open mouth.",
+    "blink": "Edit this picture. Keep everything exactly the same: same face, same head position and size, same lighting, same black background. Change only her eyes: gently closed, as if blinking."
+  },
+  "voice": "Sulafat",
+  "style": "ethereal and otherworldly, a kind spirit speaking slowly from inside a crystal ball, mysterious incantation with a sing-song rhythm, warm rather than scary",
+  "scenes": [
+    {
+      "file": "01-awaken",
+      "title": "The spirit awakens",
+      "line": "<long pause> Ooooh... <breath> Who knocks upon my crystal door? <short pause> Come closer, little ones. Madame Zara's spirit awakens once more!"
+    },
+    {
+      "file": "02-candles-flicker",
+      "title": "Candles flicker",
+      "line": "Candles flicker, shadows creep... <short pause> owls are hooting, kittens sleep. <whispers> Knock, knock, knock upon the door... <chuckle> and treats you'll find, and maybe more!"
+    },
+    {
+      "file": "03-pumpkin-patch",
+      "title": "Spirits of the pumpkin patch",
+      "line": "Spirits of the pumpkin patch, <short pause> spirits of the attic latch... <long pause> wiggle your bones and tap your toes. <laugh> Happy Halloween, from head to nose!"
+    },
+    {
+      "file": "04-a-glimpse",
+      "title": "A glimpse of the future",
+      "line": "I see... <short pause> I see... <long pause> a bucket so full it will not close! <chuckle> Careful now. It's heavier than you'd suppose."
+    },
+    {
+      "file": "05-farewell",
+      "title": "Back to the mist",
+      "line": "The mist grows thick, the candles low... <sigh> back to the spirit world I go. <short pause> Be kind, be brave, and share your sweets... <giggle> Happy Halloween, and happy treats!"
+    }
+  ]
+}

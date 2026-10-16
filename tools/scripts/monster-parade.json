@@ -1,0 +1,73 @@
+{
+  "id": "monster-parade",
+  "name": "Monster Parade",
+  "emoji": "🧛",
+  "note": "Classic monsters say hello. Spooky, silly, and safe for little ones.",
+  "art_style": "Kid-friendly spooky storybook illustration, rich painterly style, warm candlelight and cool moonlight, full-bleed painting that fills the whole square edge to edge, with no frame, border, ring or circle drawn around it; one character, head and shoulders, with the main subject in the central circle of the picture (the corners will be hidden), dark background, friendly expression, not gory, no text, no letters, no logos, no borders, square composition.",
+  "ambience": "night",
+  "scenes": [
+    {
+      "file": "01-count-dracula",
+      "title": "Count Dracula",
+      "art": "An elegant old vampire count with a high-collared black and crimson cape, slicked silver-black hair, pale skin, a mischievous smile showing tiny fangs, holding a small jack-o'-lantern full of sweets, gothic castle window with a full moon behind him.",
+      "voice": "Algenib",
+      "style": "deep, slow and theatrical old-world aristocrat, playful rather than scary, savouring each word",
+      "line": "Good evening... <short pause> I am Count Dracula. <chuckle> Do not be afraid. I have only come for your... <long pause> trick-or-treat candy!",
+      "fx": ["bats"]
+    },
+    {
+      "file": "02-headless-horseman",
+      "title": "The Headless Horseman",
+      "art": "The Headless Horseman of Sleepy Hollow: a rider in a dark tattered colonial coat on a black horse, no head above the collar, holding up a glowing carved jack-o'-lantern, misty covered wooden bridge and autumn trees, orange lantern light.",
+      "voice": "Alnilam",
+      "style": "booming, echoing and dramatic at first, then a bit embarrassed and sheepish",
+      "line": "<laugh> Beware the Headless Horseman! <short pause> Er... has anyone seen my head? I think it rolled into the pumpkin patch again.",
+      "fx": ["fog", "embers"]
+    },
+    {
+      "file": "03-frankensteins-creature",
+      "title": "Frankenstein's Creature",
+      "art": "A gentle giant creature from the classic novel: patchwork grey-green skin with neat stitches, long messy dark hair, kind glowing eyes, a worn wool coat, holding a single daisy, a stormy laboratory with brass machines and a lightning-lit window. Original design, not the film version, no neck bolts, no flat-top head.",
+      "voice": "Charon",
+      "style": "slow, deep and gentle, a kind giant still learning to talk, warm and a little shy",
+      "line": "Hello... <short pause> friend. I am Frankenstein's creature. <breath> I like flowers. And music. And... Halloween!",
+      "fx": ["lightning"]
+    },
+    {
+      "file": "04-the-mummy",
+      "title": "The Mummy",
+      "art": "A friendly cartoonish mummy wrapped in old linen bandages with one bandage coming loose, sleepy glowing eyes peeking out, yawning, standing in a torch-lit Egyptian tomb with golden hieroglyph-free walls and a sarcophagus behind.",
+      "voice": "Enceladus",
+      "style": "dusty, raspy and ancient, very sleepy, gently funny",
+      "line": "<groan> Three thousand years asleep... <yawn> and I still want five more minutes. Oh dear. <short pause> I think I'm coming unwrapped!",
+      "fx": ["dust"]
+    },
+    {
+      "file": "05-the-werewolf",
+      "title": "The Werewolf",
+      "art": "A fluffy, excitable werewolf with silver-brown fur, big friendly eyes and a goofy grin, wearing a torn plaid shirt, howling joyfully at a huge full moon on a hilltop, pine forest silhouettes.",
+      "voice": "Fenrir",
+      "style": "excited and gravelly, bursting with energy, like an overexcited puppy",
+      "line": "<growl> Is that... <short pause> a full moon? Ah-wooooo! <laugh> Sorry, sorry! I just love the moon so much!",
+      "fx": ["moon-glow"]
+    },
+    {
+      "file": "06-the-witch",
+      "title": "The Witch",
+      "art": "A cheerful old witch with a tall crooked purple hat, wild silver hair, round spectacles and a big grin, stirring a bubbling green cauldron, a black cat on her shoulder, jars and candles on cottage shelves.",
+      "voice": "Leda",
+      "style": "cackling, mischievous and delighted, an old witch having the best night ever",
+      "line": "<cackle> Eye of newt, and toe of frog... and a big bag of jelly beans! Into the cauldron it goes! <cackle> Happy Halloween, my dears!",
+      "fx": ["sparkles"]
+    },
+    {
+      "file": "07-the-friendly-ghost",
+      "title": "The Friendly Ghost",
+      "art": "A small, soft, glowing white ghost with big shy eyes and rosy cheeks, floating in an old moonlit attic with cobwebs, a rocking chair and a little lantern.",
+      "voice": "Achernar",
+      "style": "soft, airy and whispery, shy and friendly",
+      "line": "<whispers> Boo! <giggle> Did I scare you? <short pause> I'm still practising for Halloween night.",
+      "fx": ["fog", "sparkles"]
+    }
+  ]
+}

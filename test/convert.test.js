@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
-const { buildArgs, frameFilter, kindOf, convert, tools } = require('../src/lib/convert');
+const { buildArgs, frameFilter, kindOf, convert, tools, buildMedleyArgs, makeMedley } = require('../src/lib/convert');
 
 const after = (args, flag) => args[args.indexOf(flag) + 1];
 
@@ -46,6 +46,45 @@ test('pictures become a 10 second zoom, GIFs loop to at least 8 seconds', () => 
   const gif = buildArgs({ input: 'g.gif', output: 'o.mp4', info: { kind: 'gif', duration: 2, hasAudio: false } });
   assert.equal(after(gif, '-ignore_loop'), '0');
   assert.equal(after(gif, '-t'), '8');
+});
+
+test('joining keeps each clip’s sound and fills silent ones with silence', () => {
+  const args = buildMedleyArgs(
+    [
+      { path: 'a.mp4', hasAudio: true, duration: 15 },
+      { path: 'b.mp4', hasAudio: false, duration: 2.5 },
+    ],
+    'all.mp4',
+  );
+  const filter = after(args, '-filter_complex');
+  assert.match(filter, /\[0:a:0\]aresample=44100/);
+  assert.match(filter, /aevalsrc=0:s=44100:c=stereo:d=2\.500\[a1\]/);
+  assert.match(filter, /\[v0\]\[a0\]\[v1\]\[a1\]concat=n=2:v=1:a=1\[v\]\[a\]$/);
+  assert.equal(after(args, '-profile:v'), 'baseline');
+  assert.equal(args.at(-1), 'all.mp4');
+});
+
+test('real join produces one ball-format video as long as both clips', { skip: !tools().ffmpeg && 'ffmpeg not installed' }, async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'join-'));
+  const make = (name, src) => {
+    const raw = path.join(dir, `${name}-raw.mp4`);
+    execFileSync(tools().ffmpeg, ['-v', 'error', '-f', 'lavfi', '-i', src, '-pix_fmt', 'yuv420p', raw]);
+    return raw;
+  };
+  const a = path.join(dir, 'a.mp4');
+  const b = path.join(dir, 'b.mp4');
+  await convert(make('a', 'testsrc=size=480x480:rate=30:duration=2'), a);
+  await convert(make('b', 'testsrc2=size=640x360:rate=25:duration=1'), b);
+  const out = path.join(dir, 'all.mp4');
+  await makeMedley([a, b], out);
+  const info = JSON.parse(
+    execFileSync(tools().ffprobe, ['-v', 'error', '-print_format', 'json', '-show_streams', '-show_format', out], { encoding: 'utf8' }),
+  );
+  const v = info.streams.find((s) => s.codec_type === 'video');
+  assert.equal(v.profile, 'Constrained Baseline');
+  assert.equal(v.width, 480);
+  assert.ok(Math.abs(Number(info.format.duration) - 3) < 0.2, `duration ${info.format.duration}`);
+  assert.equal(info.streams.find((s) => s.codec_type === 'audio').codec_name, 'mp3');
 });
 
 test('real conversion produces the ball format', { skip: !tools().ffmpeg && 'ffmpeg not installed' }, async () => {

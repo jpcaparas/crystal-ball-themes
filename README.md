@@ -19,6 +19,7 @@ inside the ball. You can make your own from any videos, GIFs or photos, and prev
 your desktop first.
 
 **Contents:** [Pick your path](#pick-your-path) · [Does it work with my ball?](#does-it-work-with-my-ball) ·
+[Why use this app](#why-use-this-app) ·
 [Using the app](#using-the-app) · [Themes](#themes) · [Build it yourself](#build-it-yourself) ·
 [Commands](#commands) · [How it works](#how-it-works-in-one-picture) · [Troubleshooting](#troubleshooting) ·
 [Words used here](#words-used-here) · [Credits and licence](#credits-and-licence)
@@ -35,7 +36,7 @@ your desktop first.
 | Make a new theme (drawn, voiced, or a talking head) | [docs/themes.md](docs/themes.md) |
 | Make the pictures and voices for the voiced themes, with any AI model | [docs/media.md](docs/media.md) |
 | Understand how the code fits together | [docs/architecture.md](docs/architecture.md) |
-| Know everything about the hardware | [docs/hardware.md](docs/hardware.md) |
+| Know everything about the hardware, or buy a ball | [docs/hardware.md](docs/hardware.md) |
 | Work on this with a coding agent | [AGENTS.md](AGENTS.md). Any agent or tool that reads `AGENTS.md` will pick it up. |
 | Report a security problem | [SECURITY.md](SECURITY.md) (privately, please) |
 
@@ -49,6 +50,37 @@ It was built for a ball that shows up on a Mac as:
 Other video balls that are USB drives with a `video` folder will probably work too, because the app
 also looks for "any FAT drive with a `video` folder". The manual that came with ours is labelled
 **UM-ER-02**. Details are in [docs/hardware.md](docs/hardware.md).
+
+**Buying one:** it's sold under many brand names as a *crystal ball video player*, *memory orb* or
+*memory sphere*, on Amazon, Walmart, eBay, AliExpress and TikTok Shop. Look for a 7 cm (2.7 inch)
+ball with a 480 × 480 screen, 4 GB of storage, USB-C, and "no app, no WiFi" (USB upload). WiFi
+models load videos through a phone app instead and haven't been tried with this app. See
+[Where to buy one](docs/hardware.md#where-to-buy-one).
+
+## Why use this app
+
+The ball has no software of its own. Its seller's
+[video tutorial](https://www.tiktok.com/@crystal_ball48/video/7516892593511304456) shows the stock
+way to change what it plays: a commercial Windows video converter, settings typed in by hand, and
+one file at a time. This app does the whole job, on a Mac, in two clicks.
+
+| | The seller's way | Crystal Ball Themes |
+| --- | --- | --- |
+| Computer | Windows | Mac |
+| Software | A commercial video converter (until it's paid for, it converts only 5 minutes of video) | Free and open source |
+| Video settings | Typed in each time: MP4, H.264, "480*480", MP3 128 kb/s, 44.1 kHz | The ball's exact format, applied automatically |
+| Framing for the round screen | Crop each video by hand | Automatic: fill the screen, or fit inside the circle |
+| What you can add | Videos | Videos, GIFs and photos, including iPhone photos |
+| Getting it onto the ball | Find the converted file, open the ball, copy it into `video` | Plug in the ball and press **Show on the ball** |
+| What was already on the ball | Up to you to keep a copy | Saved first, automatically |
+| Copying by hand from a Mac | Finder adds hidden `._` files, which the ball may try to play | Copies without them |
+| The ball repeats one clip until you press the dial | Press the dial for every clip | A "play all" video goes on first |
+| Seeing it before it goes on | No | A round preview on your desktop, with sound |
+| Ready-made content | No | Halloween themes, including characters that talk |
+| Switching between sets of videos | Redo the copying | Pick another theme |
+
+More detail, including each step of the seller's tutorial, is in
+[docs/hardware.md](docs/hardware.md#the-sellers-way-of-loading-videos).
 
 ## Using the app
 
@@ -246,4 +278,5 @@ More diagrams and the full code map are in [docs/architecture.md](docs/architect
   public-domain stories (Dracula, the Headless Horseman, Frankenstein's creature).
 - **Security:** see [SECURITY.md](SECURITY.md).
 - The Nightmare Before Christmas theme ships empty, for clips you own.
-- Not affiliated with the ball's maker, ArtInChip, Google, or Disney.
+- Not affiliated with the ball's maker or sellers, ArtInChip, Leawo, TikTok, Google, or Disney. Product
+  and company names belong to their owners.

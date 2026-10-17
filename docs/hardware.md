@@ -25,6 +25,63 @@ ball: the top half is a glass dome lens over a round screen, and the bottom half
 
 The manual says it needs a USB 3.0 port. It doesn't: the device is USB 2.0 high speed.
 
+## Where to buy one
+
+The same ball is sold under many brand names, so search by what it is rather than by a brand:
+*crystal ball video player*, *memory orb*, *memory sphere*, *3D crystal ball video player* or
+*electronic crystal ball*. As of October 2026 it's listed on
+[Amazon](https://www.amazon.com/s?k=crystal+ball+video+player),
+[Walmart](https://www.walmart.com/search?q=crystal+ball+video+player),
+[eBay](https://www.ebay.com/sch/i.html?_nkw=crystal+ball+video+player),
+[AliExpress](https://www.aliexpress.com/w/wholesale-crystal-ball-video-player.html) and TikTok Shop
+(for example the seller [@crystal_ball48](https://www.tiktok.com/@crystal_ball48), whose tutorial is
+described below), and wholesale on Alibaba.
+
+Listings vary, so check for these before buying:
+
+| Look for | Why |
+| --- | --- |
+| 7 cm / 2.7 inch ball, 480 × 480 round screen | The size and screen this app is built for |
+| 4 GB storage, USB-C, 800 mAh battery | Matches the ball described here |
+| "No app, no WiFi", "USB upload", "drag and drop" | It shows up as a USB drive with a `video` folder, which is what the app needs |
+
+**WiFi models** load videos from a phone app instead (the seller's posts point to an app called
+Kepifo). Some also accept USB. They haven't been tried with this app; if yours appears on the Mac
+as a USB drive with a `video` folder, it will probably work.
+
+## The seller's way of loading videos
+
+The ball comes with no software. The seller's
+[transcoding tutorial](https://www.tiktok.com/@crystal_ball48/video/7516892593511304456) (TikTok,
+18 June 2025, about 2 minutes) shows the stock process on Windows:
+
+1. Open **Leawo Prof. Media**, a commercial video converter, and go to **Convert**.
+2. Edit the MP4 output profile by hand: video quality *Best*, codec H.264, resolution typed in as
+   "480 * 480"; audio quality *Best*, codec MP3, 128 kb/s, 44100 Hz, stereo.
+3. Import a video.
+4. Optionally crop it by hand so the main subject sits in the centre of the round screen.
+5. Choose an output folder and press **Convert**. Until the converter is bought, it shows a notice
+   that it converts only 5 minutes of video; the tutorial clicks *Agree* and carries on.
+6. Open the output folder and copy the file onto the ball's `video` folder.
+
+Those settings match what we found in the factory demo files (see
+[Video format the player accepts](#video-format-the-player-accepts)), which is a good cross-check.
+
+What Crystal Ball Themes does instead, on a Mac:
+
+| Step | The seller's way | This app |
+| --- | --- | --- |
+| Software | Install a commercial Windows converter (5-minute limit until it's bought) | Free and open source; uses ffmpeg |
+| Settings | Typed in for every conversion | The exact factory format, including the parts a converter doesn't show (Constrained Baseline level 3.0, 30 fps, yuv420p, always an audio track) |
+| Framing | Crop by hand | Automatic: fill the screen, or fit the whole picture inside the circle |
+| Inputs | Videos | Videos, GIFs and photos, including HEIC from iPhones |
+| Many clips | One conversion and one copy at a time | Drop in as many as you like; they're kept together as a theme |
+| Onto the ball | Copy files yourself | Finds the ball, writes the theme, reads it back to check, and ejects |
+| Safety | Whatever was on the ball is up to you | Unknown videos are saved as a theme before anything is replaced |
+| Playback | The ball repeats one clip until you press the dial | A joined "play all" video goes first, so a theme plays through on its own |
+| Preview | None | A round, floating preview of any theme on the desktop |
+| Content | Bring your own | Built-in Halloween themes, including talking, lip-synced characters |
+
 ## USB identity
 
 | Field | Value |
@@ -128,6 +185,7 @@ dump with the bootloader's read commands and load the image into REA/Ghidra (RIS
 
 ## References
 
+- The seller's transcoding tutorial (TikTok): <https://www.tiktok.com/@crystal_ball48/video/7516892593511304456>
 - ArtInChip BROM USB upgrade mode: <http://doc.panel-tag.cn/m4/ic/brom/usb_mode.html>
 - Upgrade mode entry: <https://www.artinchip.com/knowledge/oxy_ex-1/topics/brom-upgradeStartMode.html>
 - AICUPG flow: <https://www.artinchip.com/knowledge/oxy_ex-1/topics/aicupg-burn-luban.html>

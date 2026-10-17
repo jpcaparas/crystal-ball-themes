@@ -5,8 +5,18 @@ family's Mac, copies files onto a USB device, and its theme tools can hold an AP
 
 ## Reporting a problem
 
-Please **don't open a public issue** for a security problem. Use GitHub's private reporting instead:
-the repository's **Security** tab → **Report a vulnerability**. You'll get a reply within a week.
+Please **don't open a public issue** for a security problem. Report it privately with GitHub's
+private vulnerability reporting:
+**[Report a vulnerability](https://github.com/jpcaparas/crystal-ball-themes/security/advisories/new)**
+(or the repository's **Security** tab → **Report a vulnerability**).
+
+Include what you found, how to reproduce it, and what it affects. Then, with coordinated disclosure:
+
+1. You'll get a reply within **7 days** confirming the report.
+2. We'll agree on how serious it is and when a fix is expected, usually within **30 days**.
+3. The fix lands on `main`, and a security advisory is published, crediting you if you'd like.
+4. Please keep the details private until then, or for **90 days** after your report, whichever
+   comes first.
 
 Only the latest code on the `main` branch is supported.
 

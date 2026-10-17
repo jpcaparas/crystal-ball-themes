@@ -1,6 +1,6 @@
 """Make the app icon from the jack-o'-lantern clip, drawn at full resolution.
 
-Usage: uv run --with pillow --with numpy python tools/make_icon.py assets/icon
+Usage: uv run --with-requirements tools/requirements.txt python tools/make_icon.py assets/icon
 Writes icon.png (1024 px) and icon.icns (via macOS iconutil).
 """
 

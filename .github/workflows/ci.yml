@@ -1,0 +1,215 @@
+# Every pull request and every push to main. Proves a fresh clone sets up, passes and packages on
+# real Macs (Apple silicon and Intel), and that nothing unsafe is about to be published.
+#
+# Security conventions for every workflow here (checked by the "workflows" job below):
+#   - actions are pinned to a full commit SHA, with the version in a comment (Dependabot bumps both)
+#   - the token is read-only unless a job says otherwise, and checkouts don't keep credentials
+#   - no `${{ }}` expressions inside `run:` scripts; values go through `env:` instead
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: '1'
+  HOMEBREW_NO_INSTALL_CLEANUP: '1'
+  HOMEBREW_NO_ANALYTICS: '1'
+  NPM_CONFIG_FUND: 'false'
+
+jobs:
+  static:
+    name: Lint, unit tests, audit (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+
+      - name: Install ffmpeg
+        run: sudo apt-get update -q && sudo apt-get install -yq --no-install-recommends ffmpeg
+
+      - name: Install npm packages (no install scripts, so no Electron download)
+        run: npm ci --ignore-scripts
+
+      - name: Audit npm packages for known vulnerabilities
+        run: npm audit --audit-level=moderate
+
+      - name: Verify npm registry signatures and provenance
+        run: npm audit signatures
+
+      - name: Lint (ruff with security rules, JS syntax)
+        run: npm run lint
+
+      - name: Unit tests, media plan checks and repo safety checks
+        run: npm test
+
+      - name: The media plan builds
+        run: npm run media:plan
+
+  workflows:
+    name: Workflow security (actionlint, zizmor)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+
+      - name: actionlint (with shellcheck on every run script)
+        env:
+          VERSION: 1.7.12
+          SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/actionlint.tgz" "https://github.com/rhysd/actionlint/releases/download/v${VERSION}/actionlint_${VERSION}_linux_amd64.tar.gz"
+          echo "${SHA256}  $RUNNER_TEMP/actionlint.tgz" | sha256sum --check --strict -
+          tar -xzf "$RUNNER_TEMP/actionlint.tgz" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -color
+
+      - name: zizmor (GitHub Actions security audit, including online checks)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: uvx zizmor@1.30.1 --format github .github/
+
+  secrets:
+    name: Secret scan (whole history)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out (all history)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: gitleaks
+        env:
+          VERSION: 8.30.1
+          SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/gitleaks.tgz" "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          echo "${SHA256}  $RUNNER_TEMP/gitleaks.tgz" | sha256sum --check --strict -
+          tar -xzf "$RUNNER_TEMP/gitleaks.tgz" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" git --redact --no-banner --exit-code 1 .
+
+  dependencies:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Block pull requests that add vulnerable dependencies
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: low
+
+  mac:
+    name: Fresh clone on ${{ matrix.os }}
+    needs: [static, workflows, secrets]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+
+      - name: Install ffmpeg
+        run: brew install ffmpeg
+
+      - name: Install npm packages
+        run: npm ci
+
+      - name: Set up from scratch, like a new clone (Halloween renders; themes without media skip)
+        env:
+          CRYSTAL_BALL_DATA_DIR: ${{ runner.temp }}/data-setup
+        run: npm run setup
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Every theme tool renders ball-ready clips (draft mode, no API key)
+        run: npm run test:tools
+
+      - name: Package, with a decoy .env that must not end up inside the app
+        run: |
+          printf 'GEMINI_API_KEY=decoy-%s\n' "$GITHUB_RUN_ID" > .env
+          npm run package
+          rm .env
+
+      - name: Check the app (allowlisted files only, fuses set, signature intact)
+        run: npm run package:verify
+
+      - name: The packaged app starts and keeps running
+        env:
+          CRYSTAL_BALL_DATA_DIR: ${{ runner.temp }}/data-packaged
+        run: |
+          "dist/Crystal Ball Themes-darwin-$(node -p process.arch)/Crystal Ball Themes.app/Contents/MacOS/Crystal Ball Themes" &
+          pid=$!
+          sleep 20
+          kill -0 "$pid"
+          kill "$pid"
+
+      - name: Screenshot of the app
+        env:
+          CRYSTAL_BALL_DATA_DIR: ${{ runner.temp }}/data-screenshot
+        run: npm run screenshot
+
+      - name: Keep the screenshot for review
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: screenshot-${{ matrix.os }}
+          path: dist/screenshot.png
+          if-no-files-found: error
+          retention-days: 7

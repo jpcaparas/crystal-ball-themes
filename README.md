@@ -1,5 +1,9 @@
 # Crystal Ball Themes
 
+[![CI](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/ci.yml/badge.svg)](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/codeql.yml/badge.svg)](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/jpcaparas/crystal-ball-themes/badge)](https://scorecard.dev/viewer/?uri=github.com/jpcaparas/crystal-ball-themes)
+
 **Change what plays on a glowing "electronic crystal ball" in two clicks.**
 
 A small Mac app for a toy sold as an *electronic crystal ball*: a 7 cm glass dome with a round
@@ -29,9 +33,11 @@ your desktop first.
 | Build and run it on my Mac | [Build it yourself](#build-it-yourself) |
 | Change it, fork it, or send improvements | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Make a new theme (drawn, voiced, or a talking head) | [docs/themes.md](docs/themes.md) |
+| Make the pictures and voices for the voiced themes, with any AI model | [docs/media.md](docs/media.md) |
 | Understand how the code fits together | [docs/architecture.md](docs/architecture.md) |
 | Know everything about the hardware | [docs/hardware.md](docs/hardware.md) |
 | Work on this with a coding agent | [AGENTS.md](AGENTS.md). Any agent or tool that reads `AGENTS.md` will pick it up. |
+| Report a security problem | [SECURITY.md](SECURITY.md) (privately, please) |
 
 ## Does it work with my ball?
 
@@ -99,11 +105,18 @@ Deleting a clip or a theme moves it to the Bin, so it can always be recovered.
 | 🔮 **Fortune Teller** | Madame Zara looks into her crystal ball and tells nine kind, funny fortunes. |
 | 🕯️ **Spirit in the Ball** | Madame Zara's spirit floats *inside* the ball, blinking and mouthing five spooky rhymes, lip-synced to her voice. |
 | 🌙 **Midnight Séance** | A younger Madame Zara's spirit, silver hair drifting through the mist and glowing ghostly green inside the ball, with ten fortunes, riddles and rhymes. |
+| 🌕 **Hollow Hill Parade** | An original stop-motion cast parades past, each talking, blinking and saying their catchphrase: Old Man Moon, Lantern Larry, Countess Moth, Bartholomew Bones, Mrs. Bubbles, Pip the ghost kitten, Grandma Cobweb and Sir Hoot. |
 | 🦇 **Nightmare Before Christmas** | Starts empty, for clips or pictures you own. |
 | 💾 **Saved from ball** | Made automatically the first time you replace videos the app hasn't seen before (like the ones the ball came with), so you can always put them back. |
 
 The last two are created on your Mac as you use the app. Want another theme? See
 [docs/themes.md](docs/themes.md).
+
+Halloween is drawn by code, so it's always there. The other built-in themes are scripts: every
+picture prompt, voice and line is in `tools/scripts/`, but the generated pictures and voices
+themselves aren't kept in this repository. On a new copy you make them once, with Gemini or any
+other image and speech model ([docs/media.md](docs/media.md)), and the app shows each theme as soon
+as it's rendered. Your pictures will look a little different from anyone else's.
 
 ## Build it yourself
 
@@ -137,9 +150,9 @@ npm install
 npm run setup
 ```
 
-`npm run setup` renders the built-in theme videos (no API key needed; it uses saved art and voices)
-and then runs `npm run doctor`, which checks everything is in place and tells you how to fix anything
-that isn't.
+`npm run setup` renders the built-in themes it can (Halloween always; the others once their
+pictures and voices are made, see [docs/media.md](docs/media.md)) and then runs `npm run doctor`,
+which checks everything is in place and tells you how to fix anything that isn't.
 
 **3. Run it:**
 
@@ -147,17 +160,13 @@ that isn't.
 npm start
 ```
 
-**4. Make a real Mac app** (optional):
+**4. Make a real Mac app** (optional). This builds it and copies it into your Applications folder:
 
 ```bash
-npm run package
+npm run install-app
 ```
 
-```bash
-ditto "dist/Crystal Ball Themes-darwin-arm64/Crystal Ball Themes.app" ~/Applications/"Crystal Ball Themes.app"
-```
-
-The app is unsigned, which is fine on the Mac that built it. To give it to someone else, see
+The app isn't signed with an Apple Developer ID, which is fine on the Mac that built it. To give it to someone else, see
 [CONTRIBUTING.md](CONTRIBUTING.md#sharing-the-app).
 
 ## Commands
@@ -167,17 +176,22 @@ The app is unsigned, which is fine on the Mac that built it. To give it to someo
 | `npm start` | Run the app from the source code |
 | `npm run setup` | Render built-in themes, then check the machine |
 | `npm run doctor` | Check this Mac has everything, with fixes for anything missing |
-| `npm test` | Fast tests of the app's logic, including real video conversions |
+| `npm run lint` | Check the code for mistakes and unsafe patterns |
+| `npm test` | Fast tests of the app's logic (including real video conversions), the theme scripts, and that nothing private is about to be committed |
 | `npm run test:tools` | Check every theme tool end to end (a few minutes; no API key) |
+| `npm run media:plan` | What pictures and voices each theme needs, and which are made ([docs/media.md](docs/media.md)) |
 | `npm run ball -- status` | What's connected, and which theme is on the ball |
 | `npm run ball -- themes` | List themes and their ids |
 | `npm run ball -- apply builtin/halloween` | Put a theme on the ball from Terminal |
 | `npm run ball -- add user/<id> clip.mp4 [--fit]` | Add files to one of your themes |
 | `npm run ball -- eject` | Eject the ball |
-| `npm run themes` | Re-render all built-in themes (`themes:halloween`, `themes:monsters`, `themes:fortunes`, `themes:spirit`, `themes:seance` for one) |
+| `npm run themes` | Render the built-in themes, skipping any whose media isn't made yet (`themes:halloween`, `themes:monsters`, `themes:fortunes`, `themes:spirit`, `themes:seance`, `themes:parade` for one) |
 | `npm run icon` | Re-draw the app icon |
 | `npm run screenshot` | Open the app, save `dist/screenshot.png`, close |
 | `npm run package` | Build the Mac app into `dist/` |
+| `npm run package:verify` | Check the built app holds only what it should and is locked down |
+| `npm run install-app` | Build the app and copy it to `~/Applications` |
+| `npm run check:public` | Before pushing: check the files **and the whole history** are safe to publish |
 
 ## How it works, in one picture
 
@@ -206,7 +220,7 @@ More diagrams and the full code map are in [docs/architecture.md](docs/architect
 | "Couldn't join the clips" | Install ffmpeg (`brew install ffmpeg`), then press Show on the ball again. |
 | A file won't add | It may be damaged or have no picture. Try a different file. |
 | "Couldn't eject" | Close any Finder window showing the ball, wait a few seconds, and try again. |
-| A built-in theme says "No clips yet" | Run `npm run themes` (from source), then rebuild the app. |
+| A built-in theme is missing | Its pictures and voices haven't been made on this Mac yet. `npm run media:plan` shows what's needed ([docs/media.md](docs/media.md)); then `npm run themes` and `npm run install-app`. |
 | Anything else when building | Run `npm run doctor` and follow what it says. |
 
 ## Words used here
@@ -226,9 +240,10 @@ More diagrams and the full code map are in [docs/architecture.md](docs/architect
 
 - **Code:** MIT licence, see [LICENSE](LICENSE). Fork it, change it, share it.
 - **Halloween animations, sounds and icon:** drawn by the scripts in `tools/`, part of this project.
-- **Monster Parade, Fortune Teller and Spirit in the Ball:** pictures made with Google's Gemini
-  (Nano Banana 2.1) and voices made with Gemini 3.8 Flash TTS, from the scripts in `tools/scripts/`.
-  Characters are original or from public-domain stories (Dracula, the Headless Horseman,
-  Frankenstein's creature).
+- **Voiced and talking-head themes:** written as scripts in `tools/scripts/`. The pictures and voices
+  are generated from them on your own Mac: by default with Google's Gemini (Nano Banana 2.1 for
+  pictures, Gemini 3.8 Flash TTS for voices), or any model you like. Characters are original or from
+  public-domain stories (Dracula, the Headless Horseman, Frankenstein's creature).
+- **Security:** see [SECURITY.md](SECURITY.md).
 - The Nightmare Before Christmas theme ships empty, for clips you own.
 - Not affiliated with the ball's maker, ArtInChip, Google, or Disney.

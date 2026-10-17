@@ -1,9 +1,9 @@
 'use strict';
 
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, session, shell } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { pathToFileURL, fileURLToPath } = require('node:url');
 const { bundledThemesDir } = require('../lib/paths');
 const { detectBall, eject } = require('../lib/ball');
 const { ThemeStore } = require('../lib/themes');
@@ -11,11 +11,17 @@ const { applyTheme, whatsOnBall } = require('../lib/apply');
 const { tools } = require('../lib/convert');
 
 const POLL_MS = 2000;
+const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
+const MEDIA_EXT = ['mp4', 'mov', 'm4v', 'mkv', 'avi', 'webm', 'gif', 'jpg', 'jpeg', 'png', 'webp', 'heic'];
 const args = process.argv.slice(1);
 const flag = (name) => args.find((a) => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=');
-const screenshotPath = flag('screenshot');
+// Screenshot flags write files, so they only work when running from source (npm start / npm run screenshot).
+const dev = !app.isPackaged;
+const screenshotPath = dev ? flag('screenshot') : undefined;
+const previewArg = dev ? flag('preview') : undefined;
 const openTheme = flag('open');
-const previewArg = flag('preview');
+
+app.enableSandbox(); // every renderer is sandboxed, even one created by mistake later
 
 let win = null;
 let preview = null;
@@ -62,8 +68,20 @@ async function refreshBall({ force = false } = {}) {
   }
 }
 
+/** True only for the app's own pages (src/renderer/*.html), never anything else that got loaded. */
+function fromApp(event) {
+  try {
+    return path.dirname(fileURLToPath(event.senderFrame?.url || '')) === RENDERER_DIR;
+  } catch {
+    return false;
+  }
+}
+
 function handle(channel, fn) {
-  ipcMain.handle(channel, async (_event, ...a) => fn(...a));
+  ipcMain.handle(channel, async (event, ...a) => {
+    if (!fromApp(event)) throw new Error('Blocked: that request did not come from the app.');
+    return fn(...a);
+  });
 }
 
 function registerIpc() {
@@ -86,7 +104,9 @@ function registerIpc() {
   handle('themes:addFiles', async (id, files, fit) => {
     const errors = [];
     let theme = await store.load(id);
-    const list = (files || []).filter((f) => typeof f === 'string' && fs.existsSync(f));
+    const list = (Array.isArray(files) ? files : []).filter(
+      (f) => typeof f === 'string' && path.isAbsolute(f) && MEDIA_EXT.includes(path.extname(f).slice(1).toLowerCase()) && fs.statSync(f, { throwIfNoEntry: false })?.isFile(),
+    );
     for (const [index, file] of list.entries()) {
       const name = path.basename(file);
       send('convert:progress', { index, total: list.length, name, progress: 0 });
@@ -108,7 +128,7 @@ function registerIpc() {
       title: 'Add videos or pictures',
       properties: ['openFile', 'multiSelections'],
       filters: [
-        { name: 'Videos and pictures', extensions: ['mp4', 'mov', 'm4v', 'mkv', 'avi', 'webm', 'gif', 'jpg', 'jpeg', 'png', 'webp', 'heic'] },
+        { name: 'Videos and pictures', extensions: MEDIA_EXT },
       ],
     });
     return res.canceled ? [] : res.filePaths;
@@ -147,11 +167,14 @@ const secureWebPreferences = () => ({
   nodeIntegration: false,
 });
 
-function lockDown(w) {
-  // Dropping a file on a window must never navigate away from the app.
-  w.webContents.on('will-navigate', (e) => e.preventDefault());
-  w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-}
+// No page may navigate (dropping a file on a window must never leave the app), open windows, or embed
+// a <webview>. Applies to every web contents, including any added later.
+app.on('web-contents-created', (_event, contents) => {
+  contents.on('will-navigate', (e) => e.preventDefault());
+  contents.on('will-redirect', (e) => e.preventDefault());
+  contents.on('will-attach-webview', (e) => e.preventDefault());
+  contents.setWindowOpenHandler(() => ({ action: 'deny' }));
+});
 
 /** A floating, see-through crystal ball on the desktop that plays a theme like the real one. */
 function openPreview(themeId) {
@@ -175,7 +198,6 @@ function openPreview(themeId) {
     backgroundColor: '#00000000',
     webPreferences: secureWebPreferences(),
   });
-  lockDown(preview);
   preview.loadFile(path.join(__dirname, '..', 'renderer', 'preview.html'), { hash: `theme=${themeId}` });
   preview.on('closed', () => {
     preview = null;
@@ -195,7 +217,6 @@ function createWindow() {
     show: false,
     webPreferences: secureWebPreferences(),
   });
-  lockDown(win);
   win.on('closed', () => preview?.close());
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'), openTheme ? { hash: `theme=${openTheme}` } : {});
   win.once('ready-to-show', () => win.show());
@@ -214,6 +235,9 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  // The app needs no camera, microphone, notifications, location...; refuse every permission request.
+  session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
+  session.defaultSession.setPermissionCheckHandler(() => false);
   store = await new ThemeStore({
     dataDir: process.env.CRYSTAL_BALL_DATA_DIR || app.getPath('userData'),
     bundledDir: bundledThemesDir(),

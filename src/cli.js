@@ -6,6 +6,7 @@
 //   npm run ball -- themes
 //   npm run ball -- apply builtin/halloween
 //   npm run ball -- add user/nightmare-before-christmas ~/Movies/clip.mp4 [--fit]
+//   npm run ball -- backup ~/Documents   (your own themes, which aren't in git)
 //   npm run ball -- eject
 
 const { dataDir, bundledThemesDir } = require('./lib/paths');
@@ -70,13 +71,19 @@ async function main([cmd = 'status', ...args]) {
     }
     return;
   }
+  if (cmd === 'backup') {
+    if (!args[0]) throw new Error('Say where to put the backup, e.g. npm run ball -- backup ~/Documents');
+    const out = await store.backup(args[0]);
+    console.log(`Backed up your themes to ${out}`);
+    return;
+  }
   if (cmd === 'eject') {
     const ball = await requireBall();
     const res = await eject(ball.mountPoint);
     console.log(res.ok ? 'Ejected. You can unplug the ball.' : `Eject failed: ${res.error}`);
     return;
   }
-  throw new Error(`Unknown command "${cmd}". Try: status, themes, apply <id>, add <id> <files...>, eject`);
+  throw new Error(`Unknown command "${cmd}". Try: status, themes, apply <id>, add <id> <files...>, backup <folder>, eject`);
 }
 
 main(process.argv.slice(2)).catch((err) => {

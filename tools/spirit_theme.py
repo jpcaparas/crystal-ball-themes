@@ -9,13 +9,17 @@ edited copies (mouth half open, mouth open, eyes closed), this tool:
   - swaps only those regions in time with the voice's loudness (lip-sync) and for random blinks;
   - "screen"-blends the head over swirling mist so it glows like a projection, floating gently.
 
-Art and voices are cached in assets/sources/<id>/ like the other voiced themes.
+Art and voices live in assets/sources/<id>/ (not in git) like the other voiced themes: missing ones
+are made with Gemini, or by any other model or agent (see docs/media.md and `npm run media:plan`).
 
 Usage:
-  uv run --with pillow --with numpy python tools/spirit_theme.py tools/scripts/spirit-in-the-ball.json
+  uv run --with-requirements tools/requirements.txt python tools/spirit_theme.py tools/scripts/spirit-in-the-ball.json
   ... --only awaken             just matching scenes
   ... --debug                   also write <out>/masks.png showing the found mouth/eye regions
   ... --draft --out /tmp/x      cartoon placeholder head + macOS voice, never calls the API
+  ... --prepare                make missing art and voices only, then stop
+  ... --jobs 4                  render four scenes at once
+  ... --skip-missing            if media is missing and there's no API key, say so and exit 0
 """
 
 import argparse
@@ -49,32 +53,37 @@ def smoothstep(a, b, x):
 # ---------------------------------------------------------------- art
 
 
-def ensure_art(script, src, draft):
-    art = os.path.join(src, "art")
-    os.makedirs(art, exist_ok=True)
-    paths = {"head": os.path.join(art, "head.jpg")}
-    if not os.path.exists(paths["head"]):
-        if draft:
-            draft_face(paths["head"], "head")
-        else:
-            from gemini_media import generate_image
-
-            print("  art: head", flush=True)
-            ref = script.get("reference")  # optional: keeps a character consistent with an existing picture
-            refs = [os.path.join(REPO, "assets", "sources", ref)] if ref else []
-            generate_image(script["head"], paths["head"], refs=refs)
-    for key, prompt in script["variants"].items():
-        paths[key] = os.path.join(art, f"{key}.jpg")
-        if os.path.exists(paths[key]):
+def ensure_face_art(head_prompt, variants, refs, art_dir, draft, label="head"):
+    """Head picture plus its edited variants (mouth-mid, mouth-open, blink); only missing files are made.
+    Returns {name: path} with whichever picture format each was saved in."""
+    paths = {}
+    for key, prompt, inputs in [("head", head_prompt, refs)] + [(k, p, None) for k, p in variants.items()]:
+        want = os.path.join(art_dir, f"{key}.jpg")
+        paths[key] = vt.find_source(want)
+        if paths[key]:
             continue
+        if not draft:
+            vt.require_generator(want)
+        os.makedirs(art_dir, exist_ok=True)
         if draft:
-            draft_face(paths[key], key)
+            draft_face(want, key)
         else:
+            inputs = [paths["head"]] if inputs is None else [vt.find_source(r) or r for r in inputs]
+            for r in inputs:
+                if not os.path.exists(r):
+                    raise vt.MissingMedia(f"{os.path.relpath(r, REPO)}, the reference picture for {label}")
             from gemini_media import generate_image
 
-            print(f"  art: {key}", flush=True)
-            generate_image(prompt, paths[key], refs=[paths["head"]])
+            print(f"  art: {label}{'' if key == 'head' else ' ' + key}", flush=True)
+            generate_image(prompt, want, refs=inputs)
+        paths[key] = want
     return paths
+
+
+def ensure_art(script, src, draft):
+    ref = script.get("reference")  # optional: keeps a character consistent with an existing picture
+    refs = [os.path.join(REPO, "assets", "sources", ref)] if ref else []
+    return ensure_face_art(script["head"], script["variants"], refs, os.path.join(src, "art"), draft)
 
 
 def draft_face(path, kind):
@@ -140,7 +149,8 @@ def region_mask(base, var, box):
 
 
 class Face:
-    def __init__(self, paths, debug_path=None):
+    def __init__(self, paths, debug_path=None, boxes=None, quiet=False):
+        boxes = boxes or {}
         self.base = load(paths["head"])
         self.v = {}
         self.masks = {}
@@ -148,15 +158,17 @@ class Face:
         for key in ("mouth-mid", "mouth-open", "blink"):
             img, shift = align(self.base, load(paths[key]))
             self.v[key] = img
-            m, bbox = region_mask(self.base, img, EYES_BOX if key == "blink" else MOUTH_BOX)
+            box = boxes.get("eyes", EYES_BOX) if key == "blink" else boxes.get("mouth", MOUTH_BOX)
+            m, bbox = region_mask(self.base, img, tuple(box))
             self.masks[key] = m
             report.append(f"{key}: shift {shift}, region {bbox}")
         # one mouth mask covering both mouth shapes, so switching between them never shows a seam
         mm = [m for k, m in self.masks.items() if k != "blink" and m is not None]
         self.mouth = np.maximum.reduce(mm) if mm else None
         self.eyes = self.masks["blink"]
-        print("  face: " + "; ".join(report), flush=True)
-        if self.mouth is None:
+        if not quiet:
+            print("  face: " + "; ".join(report), flush=True)
+        if self.mouth is None and not quiet:
             print("  warning: no mouth movement found between the pictures; regenerate the variants", flush=True)
         if debug_path:
             vis = (self.base * 255).astype(np.uint8).copy()
@@ -292,6 +304,8 @@ def render_scene(script, scene, face, voice_path, out_path):
     ImageDraw.Draw(under).ellipse([W * 0.3, W * 0.55, W * 0.7, W * 0.95], fill=255)
     under = np.asarray(under.filter(ImageFilter.GaussianBlur(70)), np.float32)[..., None] / 255
 
+    cap_font = mh.fit_font(scene["title"], W * 0.7, 60 * mh.S, stroke=10) if look.get("caption") else None
+
     def render_baked(t):
         """The picture brings its own misty background; it fills the ball, and its hair and mist drift."""
         i = min(n - 1, int(t * FPS))
@@ -326,6 +340,12 @@ def render_scene(script, scene, face, voice_path, out_path):
         if appear < 1:
             out = out.filter(ImageFilter.GaussianBlur(10 * (1 - appear)))
         out = out.convert("RGBA")
+        if cap_font:  # who's talking, for little viewers
+            k = smoothstep(0.5, 1.2, t) * (1 - smoothstep(secs - 1.2, secs - 0.5, t))
+            if k > 0:
+                tl = mh.text_layer(scene["title"], cap_font, (255, 236, 200, 255), 10, (25, 10, 35, 255), center=(W / 2, W * 0.84))
+                tl.putalpha(tl.getchannel("A").point(lambda v: int(v * k)))
+                out.alpha_composite(tl)
         d = ImageDraw.Draw(out)
         for x, y, ph, sp in sparkles[:14]:
             a = max(0.0, math.sin(t * sp * 1.5 + ph)) * 0.6 * appear
@@ -405,6 +425,20 @@ def render_scene(script, scene, face, voice_path, out_path):
 # ---------------------------------------------------------------- main
 
 
+_FACES = {}
+
+
+def render_job(script, scene, face, voice_path, out_path):
+    """Render one scene. `face` is a Face, or (paths, debug_path, boxes) to build one in this process."""
+    if not isinstance(face, Face):
+        cache_key = json.dumps(face, sort_keys=True)
+        if cache_key not in _FACES:
+            _FACES[cache_key] = Face(*face, quiet=True)
+        face = _FACES[cache_key]
+    print(f"rendering {scene['file']}.mp4", flush=True)
+    render_scene(script, scene, face, voice_path, out_path)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("script")
@@ -412,6 +446,9 @@ def main():
     ap.add_argument("--only")
     ap.add_argument("--debug", action="store_true")
     ap.add_argument("--draft", action="store_true")
+    ap.add_argument("--prepare", action="store_true", help="make missing art and voices (and masks with --debug), then stop")
+    ap.add_argument("--jobs", type=int, default=1, help="render this many scenes at once")
+    ap.add_argument("--skip-missing", action="store_true", help="exit 0 (with a note) if media is missing and there's no key")
     args = ap.parse_args()
 
     with open(args.script, encoding="utf-8") as fh:
@@ -423,15 +460,47 @@ def main():
     src = os.path.join(args.out, "_draft-sources") if args.draft else os.path.join(REPO, "assets", "sources", sid)
     os.makedirs(out_dir, exist_ok=True)
 
-    face = Face(ensure_art(script, src, args.draft), os.path.join(out_dir, "masks.png") if args.debug else None)
     scenes = [s for s in script["scenes"] if not args.only or args.only in s["file"]]
+    cast = script.get("characters")
+    faces, specs, looks, voices = {}, {}, {}, {}
+    try:
+        if cast:
+            # A cast: each scene names a character, which brings its own picture, voice and acting.
+            needed = sorted({sc["character"] for sc in scenes}) if args.only else sorted(cast)
+            for key in needed:
+                ch = cast[key]
+                refs = [os.path.join(REPO, "assets", "sources", ch["reference"])] if ch.get("reference") else []
+                paths = ensure_face_art(f"{script.get('art_style', '')} {ch['head']}".strip(), ch.get("variants", script["variants"]),
+                                        refs, os.path.join(src, "art", key), args.draft, label=key)
+                specs[key] = (paths, None, ch.get("boxes"))
+                faces[key] = Face(paths, os.path.join(out_dir, f"masks-{key}.png") if args.debug else None, ch.get("boxes"))
+                looks[key] = {**script.get("look", {}), **ch.get("look", {})}
+            for sc in scenes:
+                ch = cast[sc["character"]]
+                sc.setdefault("voice", ch.get("voice", script.get("voice")))
+                sc.setdefault("style", ch.get("style", script.get("style")))
+        else:
+            paths = ensure_art(script, src, args.draft)
+            specs[None] = (paths, None, None)
+            faces[None] = Face(paths, os.path.join(out_dir, "masks.png") if args.debug else None)
+            for sc in scenes:
+                sc.setdefault("voice", script["voice"])
+                sc.setdefault("style", script["style"])
+        for sc in scenes:
+            voices[sc["file"]] = vt.ensure_voice(sc, os.path.join(src, "voice", f"{sc['file']}.flac"), args.draft)
+    except vt.MissingMedia as err:
+        vt.missing_media_exit(script, err, args.skip_missing)
+    if args.prepare:
+        print("art and voices ready", flush=True)
+        return
+    jobs = []
     for sc in scenes:
-        sc.setdefault("voice", script["voice"])
-        sc.setdefault("style", script["style"])
-        vt.ensure_voice(sc, os.path.join(src, "voice", f"{sc['file']}.flac"), args.draft)
-    for sc in scenes:
-        print(f"rendering {sc['file']}.mp4", flush=True)
-        render_scene(script, sc, face, os.path.join(src, "voice", f"{sc['file']}.flac"), os.path.join(out_dir, f"{sc['file']}.mp4"))
+        key = sc.get("character") if cast else None
+        scene_script = {**script, "look": looks[key]} if cast else script
+        # worker processes get the picture paths and rebuild the face, which is cheaper than sending it
+        face = faces[key] if args.jobs <= 1 else specs[key]
+        jobs.append((scene_script, sc, face, voices[sc["file"]], os.path.join(out_dir, f"{sc['file']}.mp4")))
+    vt.run_jobs(render_job, jobs, args.jobs)
 
     meta = {"name": script["name"], "emoji": script["emoji"], "note": script["note"],
             "titles": {f"{s['file']}.mp4": s["title"] for s in script["scenes"]},

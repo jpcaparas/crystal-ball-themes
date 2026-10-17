@@ -1,0 +1,24 @@
+name: Something isn't working
+description: The app, a theme tool or the ball misbehaves.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! Please **don't attach family videos or photos, API keys, or screenshots that show them**.
+        `npm run doctor` output is usually the most useful thing to include.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `npm run doctor`
+      render: text

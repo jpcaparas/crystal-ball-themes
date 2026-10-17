@@ -7,7 +7,7 @@ You don't need to have seen the project before. If you're using a coding agent, 
 **On this page:** [Set up a Mac from scratch](#set-up-a-mac-from-scratch) ·
 [Make it your own (fork checklist)](#make-it-your-own-fork-checklist) · [Everyday workflow](#everyday-workflow) ·
 [Where to change what](#where-to-change-what) · [Rules that protect the family's videos](#rules-that-protect-the-familys-videos) ·
-[Style](#style) · [Before you share a change](#before-you-share-a-change) · [Sharing the app](#sharing-the-app)
+[This repository is public](#this-repository-is-public) · [Style](#style) · [Before you share a change](#before-you-share-a-change) · [Sharing the app](#sharing-the-app)
 
 ## Set up a Mac from scratch
 
@@ -31,8 +31,10 @@ You don't need to have seen the project before. If you're using a coding agent, 
    ```bash
    npm run setup
    ```
-   `setup` renders the built-in theme videos from saved art and voices (no API key), then runs
-   `npm run doctor`. Every line should show ✓; anything marked ✗ comes with the command that fixes it.
+   `setup` renders the Halloween theme (drawn by code), plus any voiced theme whose pictures and
+   voices you've made, then runs `npm run doctor`. A fresh copy has none of those pictures and voices:
+   they're made with Gemini or any other model, see [docs/media.md](docs/media.md). Every required
+   line should show ✓; anything marked ✗ comes with the command that fixes it.
 5. **Run it:**
    ```bash
    npm start
@@ -47,9 +49,10 @@ If you're publishing your own version, change these so it doesn't clash with the
 
 | What | Where |
 | --- | --- |
-| App name (also names the data folder in `~/Library/Application Support/`) | `productName` in `package.json`, `APP_NAME` in `src/lib/paths.js`, and the name in the `package` script |
-| Bundle id | `--app-bundle-id` in the `package` script |
-| Author | `author` in `package.json`; the copyright line in `LICENSE` |
+| App name (also names the data folder in `~/Library/Application Support/`) | `productName` in `package.json`, `APP_NAME` in `src/lib/paths.js`, and `name` in `tools/package.mjs` |
+| Bundle id | `appBundleId` in `tools/package.mjs` |
+| Author | `author` in `package.json`; the copyright line in `LICENSE`; `AUTHOR_EMAILS` in `test/repo-safety.test.js` |
+| GitHub owner | The badges in `README.md`, `.github/CODEOWNERS`, `.github/ISSUE_TEMPLATE/config.yml` |
 | Icon | `tools/make_icon.py`, then `npm run icon` |
 | USB device name, if your ball is different | `USB_PRODUCT` in `src/lib/ball.js` (find yours with `ioreg -p IOUSB -w0`) |
 
@@ -67,7 +70,8 @@ flowchart LR
 
 | Check | Command | How long |
 | --- | --- | --- |
-| Logic tests (uses temporary folders, never your real themes) | `npm test` | Seconds |
+| Lint (mistakes and unsafe patterns) | `npm run lint` | Seconds |
+| Logic tests (temporary folders, never your real themes), theme scripts, and the repo safety checks | `npm test` | Seconds |
 | Theme tools still produce ball-ready video | `npm run test:tools` | A few minutes |
 | Machine has everything | `npm run doctor` | Seconds |
 | See the app | `npm start` | |
@@ -76,6 +80,9 @@ flowchart LR
 | Screenshot the desktop preview | add `--preview=builtin/halloween` | |
 | Use throwaway data | prefix with `CRYSTAL_BALL_DATA_DIR=$(mktemp -d)` | |
 | Build the app | `npm run package` | About a minute |
+| Check the built app is locked down | `npm run package:verify` | Seconds |
+| What media the voiced themes need | `npm run media:plan` | Seconds |
+| Safe to publish? (files and the whole history) | `npm run check:public` | Seconds |
 
 Working with the real ball from Terminal: `npm run ball -- status`, `npm run ball -- apply <theme id>`,
 `npm run ball -- eject`.
@@ -111,10 +118,29 @@ These keep the app safe for the people using it. Please don't break them.
 7. **Don't write the ball's firmware.** One mistake can break the toy for good.
 8. **Keep API keys out of git**, logs and screenshots. `.env` is git-ignored for this reason.
 
+## This repository is public
+
+Anything pushed here stays public, even after it's deleted, so a few extra rules apply. They're
+explained in [SECURITY.md](SECURITY.md) and, with checklists, in
+[.agents/skills/public-repo-safety/SKILL.md](.agents/skills/public-repo-safety/SKILL.md).
+
+- **No keys, family videos, photos, names or home-folder paths**, in files, commit messages,
+  screenshots or issues. `npm test` checks the files for you.
+- **No generated pictures, voices or videos.** They're made locally from the scripts
+  ([docs/media.md](docs/media.md)).
+- **Don't weaken the app's locks** (sandbox, IPC checks, CSP, packaging allowlist and fuses).
+- **New dependencies are rare.** Pin them, and pin any new GitHub Action to a full commit SHA.
+- **Run `npm run check:public` before you push.**
+
+CI runs on every pull request: lint, tests and a full fresh-clone setup on Apple silicon and Intel
+Macs, plus secret scanning of the whole history, CodeQL, dependency review and workflow security
+checks. Dependabot proposes updates weekly.
+
 ## Style
 
-- **Code:** plain CommonJS JavaScript; no runtime npm dependencies (Electron and the packager are
-  dev-only). `src/lib` must not import Electron. Python is only for the tools in `tools/`.
+- **Code:** plain CommonJS JavaScript; no runtime npm dependencies (Electron, the packager and
+  fuses are dev-only). `src/lib` must not import Electron. Python is only for the tools in `tools/`,
+  with exact pins in `tools/requirements.txt`.
 - **Tests:** `node:test`, in `test/`. Add or update a test with every change to `src/lib`. Tests use
   temporary folders, never the real data folder or a real ball.
 - **Words in the app:** short, warm, and readable by a child. NZ English ("Bin", "colour").
@@ -124,15 +150,16 @@ These keep the app safe for the people using it. Please don't break them.
 
 ## Before you share a change
 
-- [ ] `npm test` passes
+- [ ] `npm run lint` and `npm test` pass
 - [ ] `npm run test:tools` passes, if you changed anything in `tools/`
+- [ ] `npm run package && npm run package:verify` pass, if you changed `src/main/`, packaging or dependencies
 - [ ] You looked at the change in the app (or a screenshot)
 - [ ] Docs updated if behaviour changed (README, `docs/`, `AGENTS.md`)
-- [ ] No keys, personal videos or family photos in the commit
+- [ ] No keys, personal data or generated media in the commit, and `npm run check:public` passes before you push
 
 ## Sharing the app
 
-`npm run package` builds an unsigned app. It opens fine on the Mac that built it. On another Mac,
+`npm run package` builds an app that isn't signed with an Apple Developer ID. It opens fine on the Mac that built it. On another Mac,
 macOS will warn that it's from an unidentified developer; the other person can right-click the app,
 choose **Open**, and confirm. To avoid that, sign and notarise it with an Apple Developer account
 (see Electron's [code signing guide](https://www.electronjs.org/docs/latest/tutorial/code-signing)).

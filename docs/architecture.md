@@ -67,8 +67,10 @@ flowchart TB
 | `src/renderer/index.html`, `app.js`, `styles.css` | The main window. |
 | `src/renderer/preview.html`, `preview.js`, `preview.css` | The floating desktop preview. |
 | `src/cli.js` | The Terminal version of the app's actions. |
-| `tools/` | Python and Node tools that make theme videos and the icon, plus `doctor` and the tools smoke test. |
-| `test/` | Tests for `src/lib`, run with `npm test`. |
+| `tools/` | Python and Node tools that make theme videos and the icon, the media plan, packaging (`package.mjs`, `verify_package.mjs`), `doctor` and the tools smoke test. |
+| `test/` | Tests for `src/lib`, the theme scripts and media plan, and the repo safety checks, run with `npm test`. |
+| `.github/` | CI, CodeQL, Scorecard and Dependabot. |
+| `.agents/skills/` | Task instructions for coding agents, such as keeping this public repository safe. |
 
 **Rule of thumb:** `src/lib` never imports Electron. That keeps the CLI and the tests running the
 exact same logic as the app.
@@ -192,7 +194,33 @@ Content Security Policy. It can't touch files or USB. It asks the main process t
 | `on(event, callback)` | Events: `ball:status`, `apply:progress`, `convert:progress`, `preview:show` |
 
 To add a new action: write the logic in `src/lib/`, add a handler with `handle('name', …)` in
-`registerIpc` in `main.js`, expose it in `preload.js`, then call it from the window.
+`registerIpc` in `main.js`, expose it in `preload.js`, then call it from the window. Validate every
+argument in the handler: the window is trusted code, but the main process shouldn't rely on that.
+
+### Locks
+
+```mermaid
+flowchart LR
+    page["Window<br/>(sandboxed, strict CSP)"] -- "window.ballApi only" --> preload["preload.js"]
+    preload -- "IPC" --> handle{"handle():<br/>from the app's own page?"}
+    handle -- "no" --> refuse["Refused"]
+    handle -- "yes" --> check["Check every argument"] --> lib["src/lib"]
+```
+
+| Lock | Where |
+| --- | --- |
+| Every renderer is sandboxed, with context isolation and no Node.js | `app.enableSandbox()`, `secureWebPreferences` in `main.js` |
+| No remote code or connections | The Content Security Policy in each HTML file |
+| IPC answers only the app's own pages | `fromApp` and `handle` in `main.js` |
+| Dropped or picked files must be absolute paths to existing files of a known media type | `themes:addFiles` in `main.js` |
+| No navigation, redirects, pop-ups or `<webview>`, in any window | `web-contents-created` in `main.js` |
+| Every permission request (camera, microphone...) is refused | `setPermissionRequestHandler` in `main.js` |
+| Screenshot flags only work from source | `app.isPackaged` in `main.js` |
+| The built app contains only allowlisted files | `SHIP` in `tools/package.mjs` |
+| The app can't be used as Node.js (`ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS`, `--inspect` off) | `FUSES` in `tools/package.mjs` |
+
+`npm run package:verify` checks the last two on a built app, and CI runs it on every change. The
+reasons and the reporting process are in [SECURITY.md](../SECURITY.md).
 
 ## The desktop preview
 
@@ -208,6 +236,25 @@ Built-in themes are made by tools in `tools/`, not by the app. There are three k
 | --- | --- | --- |
 | Drawn animation | `tools/make_halloween.py` | Halloween |
 | Voiced scenes | `tools/voice_theme.py` + a script in `tools/scripts/` | Monster Parade, Fortune Teller |
-| Talking head | `tools/spirit_theme.py` + a script in `tools/scripts/` | Spirit in the Ball, Midnight Séance |
+| Talking head | `tools/spirit_theme.py` + a script in `tools/scripts/` | Spirit in the Ball, Midnight Séance, Hollow Hill Parade |
 
 [docs/themes.md](themes.md) explains each one and how to make your own.
+
+Voiced and talking-head themes need generated pictures and voices, which aren't in git. The theme
+scripts describe them completely, and `tools/media_plan.mjs` turns the scripts into a list any image
+or speech model can work through ([docs/media.md](media.md)):
+
+```mermaid
+flowchart LR
+    scripts["tools/scripts/*.json<br/>(in git)"] --> plan["media_plan.mjs"]
+    plan --> gemini["gemini_media.py<br/>(built in)"]
+    plan --> other["Any other model<br/>or agent"]
+    gemini --> sources[("assets/sources/<br/>(git-ignored)")]
+    other --> sources
+    sources --> tools["voice_theme.py<br/>spirit_theme.py"]
+    tools --> clips["assets/themes/*/*.mp4<br/>(git-ignored)"]
+    clips --> app["Packaged app"]
+```
+
+`npm run themes` renders every theme whose media exists and skips the others. The app hides a
+built-in theme until it has clips.

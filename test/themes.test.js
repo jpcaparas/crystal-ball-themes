@@ -48,6 +48,15 @@ test('built-in themes are read-only and ids cannot escape the store', async () =
   assert.deepEqual(t.clips.map((c) => c.file), ['01-pumpkin.mp4', '02-ghost.mp4']);
 });
 
+test('built-in themes that are not rendered yet are hidden', async () => {
+  const f = fixture();
+  fs.mkdirSync(path.join(f.bundled, 'monster-parade'));
+  fs.writeFileSync(path.join(f.bundled, 'monster-parade', 'theme.json'), JSON.stringify({ name: 'Monster Parade' }));
+  const store = await new ThemeStore({ dataDir: f.data, bundledDir: f.bundled }).init();
+  const ids = (await store.list()).map((t) => t.id);
+  assert.deepEqual(ids, ['builtin/halloween', 'user/nightmare-before-christmas']);
+});
+
 // Stands in for ffmpeg: the "joined video" is just the clips' bytes back to back.
 const fakeJoin = async (paths, out) => fs.writeFileSync(out, paths.map((p) => fs.readFileSync(p, 'utf8')).join('+'));
 
@@ -122,4 +131,16 @@ test('an empty theme cannot be applied', async () => {
   const f = fixture();
   const store = await new ThemeStore({ dataDir: f.data, bundledDir: f.bundled }).init();
   await assert.rejects(applyTheme(store, 'user/nightmare-before-christmas', f.ball), /has no clips yet/);
+});
+
+test('backup copies only the family\'s own themes into a dated folder', async () => {
+  const f = fixture();
+  const store = await new ThemeStore({ dataDir: f.data, bundledDir: f.bundled }).init();
+  const mine = await store.create('Birthday', '🎂');
+  fs.writeFileSync(path.join(mine.dir, '01-cake.mp4'), 'cake');
+  const out = await store.backup(path.join(f.root, 'backups'));
+  assert.match(path.basename(out), /^crystal-ball-themes-backup-\d{4}-\d\d-\d\d-/);
+  assert.equal(fs.readFileSync(path.join(out, 'themes', 'birthday', '01-cake.mp4'), 'utf8'), 'cake');
+  assert.ok(fs.existsSync(path.join(out, 'HOW-TO-RESTORE.txt')));
+  assert.ok(!fs.existsSync(path.join(out, 'themes', 'halloween')), 'built-in themes are not backed up');
 });

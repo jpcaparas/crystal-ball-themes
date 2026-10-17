@@ -137,7 +137,10 @@ class ThemeStore {
       }
       for (const slug of names.sort()) {
         if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) continue;
-        out.push(await this.load(`${source}/${slug}`));
+        const theme = await this.load(`${source}/${slug}`);
+        // A built-in theme with no clips hasn't been rendered on this machine yet (see docs/media.md).
+        if (theme.builtin && !theme.clips.length) continue;
+        out.push(theme);
       }
     }
     // Built-ins first, then the family's themes, newest saved-from-ball sets last.
@@ -208,6 +211,23 @@ class ThemeStore {
     });
     for (const f of files) await plainCopy(f.path, path.join(theme.dir, path.basename(f.path)));
     return this.load(theme.id);
+  }
+
+  /**
+   * Copy the family's own themes (never the built-ins, which the repo can rebuild) into a new dated
+   * folder inside `dest`. They hold personal videos, so they live outside git and need their own backup.
+   */
+  async backup(dest) {
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    const out = path.join(dest, `crystal-ball-themes-backup-${stamp}`);
+    await fsp.mkdir(out, { recursive: true });
+    await fsp.cp(this.userDir, path.join(out, 'themes'), { recursive: true, errorOnExist: true, force: false });
+    await fsp.writeFile(
+      path.join(out, 'HOW-TO-RESTORE.txt'),
+      'Quit Crystal Ball Themes, then copy the "themes" folder from here into\n' +
+        '~/Library/Application Support/Crystal Ball Themes/ (merge it with the folder that is there).\n',
+    );
+    return out;
   }
 
   /**

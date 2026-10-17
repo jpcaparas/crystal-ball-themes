@@ -2,15 +2,24 @@ node_modules/
 dist/
 .DS_Store
 __pycache__/
+.ruff_cache/
 
-# Rendered by `npm run themes`; reproducible from tools/ (voiced themes from assets/sources/)
+# Generated pictures and voices: made locally by any model or agent from tools/scripts/*.json
+# (see docs/media.md and `npm run media:plan`). Only the scripts that describe them are in git.
+assets/sources/
+
+# Rendered by `npm run themes` from the scripts and the media above
 assets/themes/*/*.mp4
+assets/themes/*/masks*.png
 
-# Your Gemini key for tools/gemini_media.py
+# API keys and other local settings. Copy .env.example to .env.
 .env
+.env.*
+!.env.example
 
 # Rendered by `npm run icon`
 assets/icon/icon.iconset/
 
-# Some global gitignores exclude agent instruction files; this repo ships AGENTS.md on purpose
+# Some global gitignores exclude agent instruction files; this repo ships AGENTS.md and .agents/ on purpose
 !AGENTS.md
+!.agents/

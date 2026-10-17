@@ -7,13 +7,17 @@ style, and the art to show. This tool:
   2. makes any missing voices with Gemini 3.8 Flash TTS         -> assets/sources/<id>/voice/<scene>.flac
   3. renders each scene in the ball's format                    -> assets/themes/<id>/<scene>.mp4
 
-Generated art and voices are committed, so step 3 can be re-run offline and for free.
+Generated art and voices are not kept in git. Steps 1 and 2 only run for files that are missing,
+and any other model or agent can make them instead (see docs/media.md and `npm run media:plan`).
+Pictures may be saved as .jpg/.png/.webp and voices as .flac/.wav/.mp3/.m4a/.ogg.
 Scenes are animated with a slow push-in, effects (fog, bats, sparkles...), a caption, and a
 glow that pulses with the voice so the character feels alive.
 
 Usage:
-  uv run --with pillow --with numpy python tools/voice_theme.py tools/scripts/monster-parade.json
+  uv run --with-requirements tools/requirements.txt python tools/voice_theme.py tools/scripts/monster-parade.json
   ... --only dracula          render just matching scenes
+  ... --jobs 4                render four scenes at once
+  ... --skip-missing          if media is missing and there's no API key, say so and exit 0
   ... --draft --out /tmp/x    placeholder art + macOS `say` voices (no API key needed)
 """
 
@@ -39,6 +43,12 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 W, FPS, SR = mh.W, mh.FPS, mh.SR
 LEAD, TAIL, MIN_SECS = 0.9, 1.6, 7.0
 TAG_RE = re.compile(r"<[^>]+>")
+IMAGE_EXT = (".jpg", ".jpeg", ".png", ".webp")
+AUDIO_EXT = (".flac", ".wav", ".mp3", ".m4a", ".ogg")
+
+
+class MissingMedia(Exception):
+    """A picture or voice line isn't made yet and there's no way to make it here (no API key)."""
 
 
 def seed_of(name):
@@ -66,20 +76,45 @@ def load_script(path):
 # ---------------------------------------------------------------- sources
 
 
+def find_source(path):
+    """The file saved for `path` with any accepted picture/audio extension, or None."""
+    base, ext = os.path.splitext(path)
+    for e in AUDIO_EXT if ext in AUDIO_EXT else IMAGE_EXT:
+        if os.path.exists(base + e):
+            return base + e
+    return None
+
+
+def require_generator(path):
+    """Before calling the API for a missing file: stop cleanly if there's no key."""
+    from gemini_media import has_key
+
+    if not has_key():
+        raise MissingMedia(os.path.relpath(path, REPO))
+
+
 def ensure_art(script, key, path, draft):
-    if os.path.exists(path):
-        return
+    """Path of the picture for `key`, made first if it's missing."""
+    found = find_source(path)
+    if found:
+        return found
     if draft:
-        return draft_art(script, key, path)
+        draft_art(script, key, path)
+        return path
+    require_generator(path)
     from gemini_media import generate_image
 
     print(f"  art: {key}", flush=True)
-    generate_image(f"{script['art_style']} {script['art'][key]}", path)
+    return generate_image(f"{script['art_style']} {script['art'][key]}", path)
 
 
 def ensure_voice(scene, path, draft):
-    if os.path.exists(path):
-        return
+    """Path of the scene's voice line, made first if it's missing."""
+    found = find_source(path)
+    if found:
+        return found
+    if not draft:
+        require_generator(path)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
         raw = os.path.join(tmp, "voice.wav")
@@ -93,6 +128,32 @@ def ensure_voice(scene, path, draft):
             print(f"  voice: {scene['file']} ({scene['voice']})", flush=True)
             generate_speech(scene["line"], raw, voice=scene["voice"], style=scene.get("style"))
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", raw, "-c:a", "flac", path], check=True)
+    return path
+
+
+def run_jobs(fn, jobs, n):
+    """Call fn(*job) for each job, n at a time in separate processes (n <= 1: one by one, here)."""
+    if n <= 1 or len(jobs) <= 1:
+        for job in jobs:
+            fn(*job)
+        return
+    from concurrent.futures import ProcessPoolExecutor
+
+    with ProcessPoolExecutor(max_workers=n) as pool:
+        for future in [pool.submit(fn, *job) for job in jobs]:
+            future.result()
+
+
+def missing_media_exit(script, err, skip):
+    """Explain what's missing; exit 0 with --skip-missing (so `npm run themes` carries on), else 1."""
+    sid = script["id"]
+    msg = (f"{script['name']}: some pictures or voice lines aren't made yet (first: {err}), and there's "
+           f"no Gemini API key.\n  See them:  npm run media:plan -- --theme {sid} --missing\n"
+           f"  Make them with any model (docs/media.md), or add a key to .env and run this again.")
+    if skip:
+        print(f"skipping {msg}", flush=True)
+        sys.exit(0)
+    sys.exit(msg)
 
 
 def draft_art(script, key, path):
@@ -286,12 +347,19 @@ def render_scene(script, scene, art_paths, voice_path, out_path):
 # ---------------------------------------------------------------- main
 
 
+def render_job(script, scene, art_paths, voice_path, out_path):
+    print(f"rendering {scene['file']}.mp4", flush=True)
+    render_scene(script, scene, art_paths, voice_path, out_path)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("script")
     ap.add_argument("--out", help="output folder (default assets/themes/<id>)")
     ap.add_argument("--only", help="only scenes whose file name contains this")
     ap.add_argument("--draft", action="store_true", help="placeholder art and macOS voices; never calls the API")
+    ap.add_argument("--jobs", type=int, default=1, help="render this many scenes at once")
+    ap.add_argument("--skip-missing", action="store_true", help="exit 0 (with a note) if media is missing and there's no key")
     args = ap.parse_args()
 
     script = load_script(args.script)
@@ -303,17 +371,17 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
 
     scenes = [s for s in script["scenes"] if not args.only or args.only in s["file"]]
-    art_paths = {}
-    for sc in scenes:
-        for key in sc["shots"]:
-            art_paths[key] = os.path.join(src, "art", f"{key}.jpg")
-            ensure_art(script, key, art_paths[key], args.draft)
-        ensure_voice(sc, os.path.join(src, "voice", f"{sc['file']}.flac"), args.draft)
+    art_paths, voices = {}, {}
+    try:
+        for sc in scenes:
+            for key in sc["shots"]:
+                art_paths[key] = ensure_art(script, key, os.path.join(src, "art", f"{key}.jpg"), args.draft)
+            voices[sc["file"]] = ensure_voice(sc, os.path.join(src, "voice", f"{sc['file']}.flac"), args.draft)
+    except MissingMedia as err:
+        missing_media_exit(script, err, args.skip_missing)
 
-    for sc in scenes:
-        print(f"rendering {sc['file']}.mp4", flush=True)
-        render_scene(script, sc, art_paths, os.path.join(src, "voice", f"{sc['file']}.flac"),
-                     os.path.join(out_dir, f"{sc['file']}.mp4"))
+    run_jobs(render_job, [(script, sc, art_paths, voices[sc["file"]], os.path.join(out_dir, f"{sc['file']}.mp4"))
+                          for sc in scenes], args.jobs)
 
     meta = {"name": script["name"], "emoji": script["emoji"], "note": script["note"],
             "titles": {f"{s['file']}.mp4": s["title"] for s in script["scenes"]},

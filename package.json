@@ -12,22 +12,29 @@
     "setup": "npm run themes && npm run doctor",
     "doctor": "node tools/doctor.mjs",
     "test": "node --test test/*.test.js",
-    "test:tools": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/smoke_test.py",
+    "check:public": "bash .agents/skills/public-repo-safety/scripts/prepublish.sh",
+    "lint": "uvx ruff@0.16.10 check && find src tools test -name \"*.js\" -o -name \"*.mjs\" | xargs -n1 node --check",
+    "test:tools": "PYTHONDONTWRITEBYTECODE=1 uv run --with-requirements tools/requirements.txt python tools/smoke_test.py",
     "ball": "node src/cli.js",
-    "themes": "npm run themes:halloween && npm run themes:monsters && npm run themes:fortunes && npm run themes:spirit && npm run themes:seance",
-    "themes:halloween": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/make_halloween.py assets/themes/halloween",
-    "themes:monsters": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/voice_theme.py tools/scripts/monster-parade.json",
-    "themes:fortunes": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/voice_theme.py tools/scripts/fortune-teller.json",
-    "themes:spirit": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/spirit_theme.py tools/scripts/spirit-in-the-ball.json",
-    "themes:seance": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/spirit_theme.py tools/scripts/midnight-seance.json",
-    "icon": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/make_icon.py assets/icon",
+    "themes": "npm run themes:halloween && npm run themes:monsters -- --skip-missing && npm run themes:fortunes -- --skip-missing && npm run themes:spirit -- --skip-missing && npm run themes:seance -- --skip-missing && npm run themes:parade -- --skip-missing",
+    "themes:halloween": "PYTHONDONTWRITEBYTECODE=1 uv run --with-requirements tools/requirements.txt python tools/make_halloween.py assets/themes/halloween",
+    "themes:monsters": "PYTHONDONTWRITEBYTECODE=1 uv run --with-requirements tools/requirements.txt python tools/voice_theme.py tools/scripts/monster-parade.json",
+    "themes:fortunes": "PYTHONDONTWRITEBYTECODE=1 uv run --with-requirements tools/requirements.txt python tools/voice_theme.py tools/scripts/fortune-teller.json",
+    "themes:spirit": "PYTHONDONTWRITEBYTECODE=1 uv run --with-requirements tools/requirements.txt python tools/spirit_theme.py tools/scripts/spirit-in-the-ball.json",
+    "themes:seance": "PYTHONDONTWRITEBYTECODE=1 uv run --with-requirements tools/requirements.txt python tools/spirit_theme.py tools/scripts/midnight-seance.json",
+    "themes:parade": "PYTHONDONTWRITEBYTECODE=1 uv run --with-requirements tools/requirements.txt python tools/spirit_theme.py tools/scripts/hollow-hill-parade.json",
+    "media:plan": "node tools/media_plan.mjs",
+    "icon": "PYTHONDONTWRITEBYTECODE=1 uv run --with-requirements tools/requirements.txt python tools/make_icon.py assets/icon",
     "screenshot": "electron . --screenshot=dist/screenshot.png",
-    "package": "electron-packager . \"Crystal Ball Themes\" --platform=darwin --arch=arm64 --out=dist --overwrite --icon=assets/icon/icon.icns --app-bundle-id=com.jpcaparas.crystal-ball-themes --no-asar --ignore=^/tools --ignore=^/test --ignore=^/docs --ignore=^/assets/sources --ignore=^/dist --ignore=^/AGENTS.md --ignore=^/\\\\.editorconfig --ignore=^/CONTRIBUTING.md"
+    "package": "node tools/package.mjs",
+    "package:verify": "node tools/verify_package.mjs",
+    "install-app": "npm run package && mkdir -p \"$HOME/Applications\" && rm -rf \"$HOME/Applications/Crystal Ball Themes.app\" && ditto \"dist/Crystal Ball Themes-darwin-$(node -p process.arch)/Crystal Ball Themes.app\" \"$HOME/Applications/Crystal Ball Themes.app\""
   },
   "engines": {
     "node": ">=22.19"
   },
   "devDependencies": {
+    "@electron/fuses": "^2.1.3",
     "@electron/packager": "^20.3.0",
     "electron": "^44.8.0"
   }

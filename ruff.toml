@@ -1,0 +1,17 @@
+# Lint rules for the Python theme tools (run: npm run lint). Correctness, bug-prone patterns and
+# security checks (bandit), not style.
+target-version = "py313"
+line-length = 140
+include = ["tools/**/*.py"]
+
+[lint]
+select = ["E", "F", "W", "B", "S", "UP"]
+ignore = [
+  "E501",  # long lines are fine in drawing code
+  "S101",  # assert is used for real checks in tools, never for security
+  "S311",  # random is for animation, not cryptography
+  "S603",  # subprocess calls run fixed tools (ffmpeg, say) with argument lists, never a shell
+  "S607",  # ...found on PATH, like everywhere else in the project
+  "B905",  # zip() without strict= is intentional
+  "UP031", # %-formatting is fine
+]

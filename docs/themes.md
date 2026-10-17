@@ -40,8 +40,8 @@ flowchart TD
 | Kind | Looks like | Needs an API key? | Example |
 | --- | --- | --- | --- |
 | Drawn animation | Shapes drawn frame by frame in Python | No | Halloween |
-| Voiced scenes | A painted picture with slow zoom, effects, a caption and a voice | Only to make new pictures and voices | Monster Parade, Fortune Teller |
-| Talking head | A face that blinks and moves its mouth in time with a voice | Only to make new pictures and voices | Spirit in the Ball, Midnight Séance |
+| Voiced scenes | A painted picture with slow zoom, effects, a caption and a voice | Only to make its pictures and voices with Gemini; any other model works too ([media.md](media.md)) | Monster Parade, Fortune Teller |
+| Talking head | Faces that blink and move their mouths in time with a voice; one or a whole cast | Same as voiced scenes | Spirit in the Ball, Midnight Séance, Hollow Hill Parade |
 
 ## Drawn animations
 
@@ -68,16 +68,19 @@ background sound, and encodes the result.
 
 ```mermaid
 flowchart LR
-    script["tools/scripts/my-theme.json"] --> art["Gemini picture<br/>(only if missing)"]
-    script --> voice["Gemini voice<br/>(only if missing)"]
+    script["tools/scripts/my-theme.json"] --> art["Picture: Gemini or any model<br/>(only if missing)"]
+    script --> voice["Voice: Gemini or any model<br/>(only if missing)"]
     art --> sources[("assets/sources/my-theme/")]
     voice --> sources
     sources --> render["voice_theme.py renders"]
     render --> clips["assets/themes/my-theme/*.mp4"]
 ```
 
-Pictures and voices are saved in `assets/sources/<id>/` and committed to git. After the first run,
-rendering never calls the API again, so anyone can rebuild the theme for free and offline.
+Pictures and voices are saved in `assets/sources/<id>/`, which git ignores: the script is the
+source, and each copy of the project makes its own media, with the built-in Gemini tools or any
+other model ([media.md](media.md)). Once they exist, rendering never calls an API again, so you can
+re-render for free and offline. Pictures can be `.jpg`, `.png` or `.webp`; voices `.flac`, `.wav`,
+`.mp3`, `.m4a` or `.ogg`.
 
 ### Script format
 
@@ -133,15 +136,23 @@ rendering never calls the API again, so anyone can rebuild the theme for free an
 1. Write the script in `tools/scripts/`.
 2. Try it with placeholders first (no API, no cost, any machine with macOS):
    ```bash
-   uv run --with pillow --with numpy python tools/voice_theme.py tools/scripts/my-theme.json --draft --out /tmp/my-theme
+   uv run --with-requirements tools/requirements.txt python tools/voice_theme.py tools/scripts/my-theme.json --draft --out /tmp/my-theme
    ```
 3. Make it for real (needs [the Gemini key](#the-gemini-key)):
    ```bash
-   uv run --with pillow --with numpy python tools/voice_theme.py tools/scripts/my-theme.json
+   uv run --with-requirements tools/requirements.txt python tools/voice_theme.py tools/scripts/my-theme.json
    ```
-4. Add an npm script for it next to `themes:monsters` in `package.json`, and add it to `themes`.
+4. Add an npm script for it next to `themes:monsters` in `package.json`, and add it to `themes`
+   as `npm run themes:my-theme -- --skip-missing`.
 
-Useful options: `--only <text>` renders only scenes whose file name contains the text.
+Useful options:
+
+| Option | Does |
+| --- | --- |
+| `--only <text>` | Render only scenes whose file name contains the text |
+| `--jobs <n>` | Render n scenes at once (each uses about one CPU core) |
+| `--skip-missing` | If pictures or voices are missing and there's no key, say so and exit cleanly (used by `npm run themes`) |
+| `--draft --out <folder>` | Placeholder pictures and the macOS voice, never calls an API |
 
 To redo one picture or one line, delete that file in `assets/sources/<id>/art/` or `voice/` and run
 the command again. Only missing files are generated.
@@ -187,6 +198,31 @@ the regions look wrong, delete the variant pictures and generate them again.
 
 `reference` is a picture under `assets/sources/` (optional, but it keeps a character consistent).
 The variants must keep the head in exactly the same place; the prompts above say so.
+
+### A cast of characters
+
+A talking-head script can have many characters instead of one head. Add a `characters` block and
+give each scene a `character`. Each character gets its own pictures (in `art/<key>/`), voice and acting.
+
+```json
+"art_style": "Shared art direction added before every character's head prompt.",
+"variants": { "mouth-mid": "...", "mouth-open": "...", "blink": "..." },
+"characters": {
+  "moon": { "head": "Old Man Moon: a big round full moon with a kind sleepy face...", "voice": "Algenib",
+            "style": "a sleepy, kindly old man", "boxes": { "mouth": [0.3, 0.5, 0.7, 0.85] } }
+},
+"scenes": [{ "file": "01-shine-on", "title": "Old Man Moon", "character": "moon", "line": "Ho-hum..." }]
+```
+
+- `variants` can be set once for everyone, or per character.
+- `boxes` (optional) tells the tool where to look for the mouth and eyes, as fractions of the
+  picture `[left, top, right, bottom]`, for faces that aren't in the usual place.
+- A character can also have its own `look` and `reference` picture.
+- Use `"caption": true` in `look` to show each scene's `title` (the speaker's name).
+- `--prepare` makes all missing pictures and voices without rendering, so you can then render scenes
+  in parallel with `--only`. With `--debug` it also saves `masks-<character>.png` to check lip-sync regions.
+
+Hollow Hill Parade (`tools/scripts/hollow-hill-parade.json`) is a full example.
 
 ### Look options
 
@@ -278,14 +314,15 @@ in the line, in angle brackets, where they should happen:
 
 ## The Gemini key
 
-Only needed to make **new** pictures or voices. Rendering from saved files never needs it.
+Only needed to make pictures or voices with the built-in Gemini tools. Rendering from saved files
+never needs it, and any other model can make the media instead ([media.md](media.md)).
 
 1. Get a key at [Google AI Studio](https://aistudio.google.com/apikey).
-2. Make a file called `.env` in the repo folder:
+2. Copy `.env.example` to `.env` in the repo folder and fill it in:
    ```
    GEMINI_API_KEY=your-key-here
    ```
-   `.env` is git-ignored, so it won't be committed. You can also set `GEMINI_API_KEY` in your shell,
+   `.env` is git-ignored, so it won't be committed. Never paste the key anywhere else. You can also set `GEMINI_API_KEY` in your shell,
    or point `GEMINI_API_KEY_FILE` at a private file that holds only the key.
 3. `npm run doctor` shows whether a key is set (it never prints it).
 
@@ -296,8 +333,9 @@ others, set `CRYSTAL_BALL_IMAGE_MODEL` or `CRYSTAL_BALL_TTS_MODEL`.
 
 - [ ] Script in `tools/scripts/` (or a function in a drawing tool)
 - [ ] Tried with `--draft` first
-- [ ] Generated sources in `assets/sources/<id>/` (for voiced and talking-head themes)
-- [ ] npm script added, and included in `npm run themes`
+- [ ] Media made locally for voiced and talking-head themes (`npm run media:plan` shows ✓). It isn't committed
+- [ ] `assets/themes/<id>/theme.json` committed (the render writes it)
+- [ ] npm script added, and included in `npm run themes` with `-- --skip-missing`
 - [ ] `npm run test:tools` and `npm test` pass
 - [ ] Looked at it with **▶ Preview** in the app
 - [ ] Added to the themes table in the README

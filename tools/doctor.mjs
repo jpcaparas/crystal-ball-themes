@@ -47,13 +47,22 @@ check(false, Boolean(which('uv')), 'uv (runs the Python theme tools)', 'Run `bre
 check(false, fs.existsSync('/System/Library/Fonts/Supplemental/ChalkboardSE.ttc'), 'Chalkboard SE font (used in theme captions)',
   'Comes with macOS. Only needed to make or re-render themes.');
 
-// Rendered built-in themes
+// Built-in themes. Halloween is drawn by code, so it can always be rendered. The voiced themes need
+// generated pictures and voices first (not in git; see docs/media.md), so they're optional.
+const { mediaPlan } = await import('./media_plan.mjs');
+const plan = mediaPlan();
 const themesDir = path.join(root, 'assets', 'themes');
 for (const id of fs.existsSync(themesDir) ? fs.readdirSync(themesDir).sort() : []) {
   if (!fs.statSync(path.join(themesDir, id)).isDirectory()) continue;
   const clips = fs.readdirSync(path.join(themesDir, id)).filter((f) => f.endsWith('.mp4')).length;
-  check(true, clips > 0, `built-in theme "${id}" is rendered (${clips} clip${clips === 1 ? '' : 's'})`,
-    'Run `npm run themes` (uses saved art and voices; no API key needed).');
+  const items = plan.filter((it) => it.theme === id);
+  const missing = items.filter((it) => !it.present).length;
+  const label = `built-in theme "${id}" is rendered (${clips} clip${clips === 1 ? '' : 's'})`;
+  if (!items.length) check(true, clips > 0, label, 'Run `npm run themes`.');
+  else if (missing) {
+    check(false, clips > 0, label, `${missing} of its ${items.length} pictures and voices aren't made yet. ` +
+      `See \`npm run media:plan -- --theme ${id} --missing\` and docs/media.md.`);
+  } else check(false, clips > 0, label, 'Its media is ready: run `npm run themes`.');
 }
 
 // Gemini key (optional)
@@ -61,8 +70,8 @@ const envFile = path.join(root, '.env');
 const keyInEnvFile = fs.existsSync(envFile) && /^\s*(export\s+)?GEMINI_API_KEY\s*=\s*['"]?[^'"\s]+/m.test(fs.readFileSync(envFile, 'utf8'));
 const keyFile = process.env.GEMINI_API_KEY_FILE;
 const hasKey = Boolean(process.env.GEMINI_API_KEY) || (keyFile && fs.existsSync(keyFile)) || keyInEnvFile;
-check(false, hasKey, 'Gemini API key (only to make new art or voices)',
-  'Put `GEMINI_API_KEY=...` in a `.env` file in the repo folder. It is git-ignored. See docs/themes.md.');
+check(false, hasKey, 'Gemini API key (only to make new pictures and voices with the built-in tools)',
+  'Copy `.env.example` to `.env` and fill in the key (git ignores it), or use any other model: see docs/media.md.');
 
 // The ball (informational)
 const ball = await detectBall().catch(() => ({ mounted: false }));

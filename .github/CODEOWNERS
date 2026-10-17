@@ -1,0 +1,6 @@
+# Changes anywhere need the maintainer's review; workflows and security files especially.
+* @jpcaparas
+/.github/ @jpcaparas
+/SECURITY.md @jpcaparas
+/AGENTS.md @jpcaparas
+/.agents/ @jpcaparas

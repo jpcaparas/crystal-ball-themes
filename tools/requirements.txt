@@ -1,0 +1,5 @@
+# Exact versions for the Python theme tools (tools/*.py). Used by every npm script via
+# `uv run --with-requirements tools/requirements.txt`, so renders don't change when new releases
+# come out. Python itself is pinned in .python-version (uv fetches it if needed).
+numpy==2.5.4
+pillow==13.0.0

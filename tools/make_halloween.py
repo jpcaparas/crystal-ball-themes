@@ -6,7 +6,7 @@ encoded in the format the ball's stock player uses:
 
 The screen is round, so everything important stays inside the centre circle.
 
-Usage: uv run --with pillow --with numpy python tools/make_halloween.py OUT_DIR [clip ...]
+Usage: uv run --with-requirements tools/requirements.txt python tools/make_halloween.py OUT_DIR [clip ...]
 """
 
 import json
@@ -197,9 +197,9 @@ def place(buf, sig, at, gain=1.0):
 
 
 def to_stereo(mono, pan=0.0):
-    l = mono * (1 - max(0, pan))
-    r = mono * (1 + min(0, pan))
-    return np.stack([l, r], axis=1)
+    left = mono * (1 - max(0, pan))
+    right = mono * (1 + min(0, pan))
+    return np.stack([left, right], axis=1)
 
 
 def master(stereo, seconds, peak=0.6, fade=0.4):
@@ -469,7 +469,7 @@ def clip_ghost(path):
                                 scale=max(0.05, s), center=(gx + (130 if gx < W / 2 else -130), gy - 260),
                                 angle=-10)
                 if fade < 1:
-                    tl.putalpha(tl.getchannel("A").point(lambda v: int(v * fade)))
+                    tl.putalpha(tl.getchannel("A").point(lambda v, f=fade: int(v * f)))
                 img.alpha_composite(tl)
         return finish(img)
 
@@ -553,7 +553,7 @@ def clip_bats(path):
 
     rng = random.Random(12)
     bats = []
-    for i in range(6):
+    for _ in range(6):
         bats.append(dict(
             speed=rng.choice([1, 1, 2]),  # laps per clip, so the loop is seamless
             off=rng.uniform(0, 1), y=rng.uniform(W * 0.25, W * 0.6), amp=rng.uniform(20, 70),
@@ -889,7 +889,7 @@ def main():
     out_dir = sys.argv[1]
     only = set(sys.argv[2:])
     os.makedirs(out_dir, exist_ok=True)
-    for fname, fn, title in CLIPS:
+    for fname, fn, _title in CLIPS:
         if only and not any(o in fname for o in only):
             continue
         print(f"rendering {fname}", flush=True)

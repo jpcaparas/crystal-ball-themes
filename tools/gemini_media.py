@@ -51,6 +51,14 @@ def api_key():
     )
 
 
+def has_key():
+    try:
+        api_key()
+        return True
+    except MissingKey:
+        return False
+
+
 def _post(body, attempts=4):
     req = urllib.request.Request(
         API,
@@ -60,7 +68,7 @@ def _post(body, attempts=4):
     )
     for attempt in range(attempts):
         try:
-            with urllib.request.urlopen(req, timeout=180) as resp:
+            with urllib.request.urlopen(req, timeout=180) as resp:  # noqa: S310 (fixed https:// API URL)
                 return json.load(resp)
         except urllib.error.HTTPError as err:
             detail = err.read().decode(errors="replace")[:500]
@@ -100,7 +108,7 @@ def generate_image(prompt, out_path, refs=()):
     content = [{"type": "text", "text": prompt}]
     for ref in refs:
         with open(ref, "rb") as fh:
-            mime = "image/png" if ref.lower().endswith(".png") else "image/jpeg"
+            mime = {".png": "image/png", ".webp": "image/webp"}.get(os.path.splitext(ref)[1].lower(), "image/jpeg")
             content.append({"type": "image", "data": base64.b64encode(fh.read()).decode(), "mime_type": mime})
     body = {
         "model": IMAGE_MODEL,
@@ -135,10 +143,10 @@ def create_voice(description, display_name, gender="female", language_code="en-U
         "gender": gender, "language_code": language_code, "prompted": {"input": description},
     }}
     url = API.replace("/interactions", "/voices")
-    req = urllib.request.Request(url, data=json.dumps(body).encode(),
+    req = urllib.request.Request(url, data=json.dumps(body).encode(),  # noqa: S310 (fixed https:// API URL)
                                  headers={"x-goog-api-key": api_key(), "Content-Type": "application/json"}, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=180) as resp:
+        with urllib.request.urlopen(req, timeout=180) as resp:  # noqa: S310 (fixed https:// API URL)
             out = json.load(resp)
     except urllib.error.HTTPError as err:
         raise RuntimeError(f"Gemini API {err.code}: {err.read().decode(errors='replace')[:500]}") from None

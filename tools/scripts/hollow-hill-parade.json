@@ -1,0 +1,165 @@
+{
+  "id": "hollow-hill-parade",
+  "name": "Hollow Hill Parade",
+  "emoji": "🌕",
+  "note": "An original stop-motion cast parades past: each character talks, blinks and says their catchphrase.",
+  "art_style": "Handmade stop-motion animation style: a character sculpted from felt, clay and fabric with visible stitching and soft texture, on a cosy candlelit Halloween storybook set with warm orange, purple and golden light and a softly blurred background. Kid-friendly, cute and gentle, not scary. Square portrait, front-facing, the character looking straight at the viewer with eyes open and mouth closed; the face is centred, with the eyes just above the middle of the picture and the mouth just below it. No text, no letters, no frame, no border.",
+  "variants": {
+    "mouth-mid": "Edit this picture. Keep everything exactly the same: same character, same pose, position and size, same background, lighting and colours. Change only the character's mouth: slightly open, as if in the middle of saying a word.",
+    "mouth-open": "Edit this picture. Keep everything exactly the same: same character, same pose, position and size, same background, lighting and colours. Change only the character's mouth: wide open in a happy 'oh' shape, as if talking excitedly.",
+    "blink": "Edit this picture. Keep everything exactly the same: same character, same pose, position and size, same background, lighting and colours. Change only the character's eyes: closed, as if blinking."
+  },
+  "look": {
+    "background": "baked",
+    "sway": 4,
+    "mist": 0.12,
+    "glass": 0.06,
+    "light": [
+      1.0,
+      0.7,
+      0.35
+    ],
+    "scale": 1.04,
+    "caption": true
+  },
+  "characters": {
+    "moon": {
+      "head": "Old Man Moon: a big, round, glowing full moon with a kind, sleepy old face (bushy eyebrows, rosy cheeks, a gentle smile), made of soft cream felt with stitched craters, filling the middle of the picture, hanging in a velvet night sky with tiny stitched stars.",
+      "voice": "Algenib",
+      "style": "a sleepy, kindly old man, warm and slow, like a grandpa telling a bedtime story, with a chuckle in his voice"
+    },
+    "larry": {
+      "head": "Lantern Larry: a friendly patchwork scarecrow whose head is a round, glowing paper lantern with a cheerful stitched face, straw poking out of his collar, a patched waistcoat, and no hat, standing in a moonlit pumpkin patch.",
+      "voice": "Puck",
+      "style": "a goofy, cheerful farmhand, upbeat and a little flustered, always laughing at himself"
+    },
+    "moth": {
+      "head": "Countess Moth: an elegant velvet moth lady with big soft eyes, fluffy antennae, plum-and-gold patterned wings spread out behind her, and a tiny pearl necklace, hovering beside a glowing candle on an old wooden desk.",
+      "voice": "Despina",
+      "style": "a dramatic, glamorous old-Hollywood diva, swooning and breathless, very theatrical and funny",
+      "boxes": {
+        "mouth": [
+          0.4,
+          0.42,
+          0.6,
+          0.56
+        ],
+        "eyes": [
+          0.38,
+          0.32,
+          0.62,
+          0.47
+        ]
+      }
+    },
+    "bones": {
+      "head": "Bartholomew Bones: a short, round, chubby little skeleton sculpted from polished cream clay, with big shiny friendly eyes and a huge grin, wearing a tiny red marching-band jacket with gold buttons and a drum strapped to his tummy, on a lantern-lit parade street.",
+      "voice": "Fenrir",
+      "style": "an excitable, bouncy little drummer, full of energy, laughing a lot"
+    },
+    "bubbles": {
+      "head": "Mrs. Bubbles: a chatty, round black cauldron with a friendly face on her belly (big kind eyes, rosy cheeks, a smiling mouth) and a little floral headscarf, with glowing green potion bubbling over her rim and sparkles floating up, on a cottage hearth.",
+      "voice": "Laomedeia",
+      "style": "a chatty, cheerful auntie, fast and bubbly, giggling, a little scatterbrained"
+    },
+    "pip": {
+      "head": "Pip: a tiny, fluffy ghost kitten made of soft white felt, faintly glowing and a little see-through, with big round eyes, a pink nose, little whiskers and a wispy tail, floating among cushions in a cosy attic.",
+      "voice": "Leda",
+      "style": "a tiny, shy, very young child, squeaky and sweet, trying very hard to be brave"
+    },
+    "cobweb": {
+      "head": "Grandma Cobweb: a sweet old grandmother spider made of soft grey felt, with eight little legs, round spectacles, a lace shawl and knitting needles, knitting a sparkly silver web in a cosy corner by a window.",
+      "voice": "Vindemiatrix",
+      "style": "a sweet, slow old granny, warm and gentle, chuckling softly",
+      "boxes": {
+        "mouth": [
+          0.38,
+          0.32,
+          0.62,
+          0.48
+        ],
+        "eyes": [
+          0.33,
+          0.2,
+          0.67,
+          0.38
+        ]
+      }
+    },
+    "hoot": {
+      "head": "Sir Hoot: a round, pompous professor owl made of brown and cream felt, with big amber eyes, a tiny monocle, a bow tie and a graduation cap, perched on a stack of old books under a reading lamp.",
+      "voice": "Sadaltager",
+      "style": "a pompous, posh professor, very proper and a little full of himself, but kind",
+      "boxes": {
+        "mouth": [
+          0.4,
+          0.44,
+          0.6,
+          0.6
+        ],
+        "eyes": [
+          0.3,
+          0.3,
+          0.7,
+          0.5
+        ]
+      }
+    }
+  },
+  "scenes": [
+    {
+      "file": "01-shine-on",
+      "title": "Old Man Moon",
+      "character": "moon",
+      "line": "Ho-hum... hello down there! <chuckle> It's me, Old Man Moon. Tonight is the Hollow Hill Parade, and everyone is coming to say hello. <short pause> Ooh, here they come now... shine on, shine on!"
+    },
+    {
+      "file": "02-lantern-larry",
+      "title": "Lantern Larry",
+      "character": "larry",
+      "line": "Evening, evening! Lantern Larry's the name, and glowing's my game! <short pause> Oh, bother... has anyone seen my hat?! <laugh> Every single Halloween!"
+    },
+    {
+      "file": "03-countess-moth",
+      "title": "Countess Moth",
+      "character": "moth",
+      "line": "Dahling! <gasp> Is that... a candle? <sigh> Ooh, how dazzling! I simply must flutter closer... <giggle> Countess Moth, at your service. Do mind my wings!"
+    },
+    {
+      "file": "04-bartholomew-bones",
+      "title": "Bartholomew Bones",
+      "character": "bones",
+      "line": "Ba-dum, ba-dum, ba-dum-dum! <laugh> Bartholomew Bones, the bounciest drummer on Hollow Hill! When I laugh, I rattle-tattle! <laugh> Rattle-tattle-tattle!"
+    },
+    {
+      "file": "05-mrs-bubbles",
+      "title": "Mrs. Bubbles",
+      "character": "bubbles",
+      "line": "Ooh, visitors! Come in, come in, the potion's lovely tonight! A pinch of pumpkin, a sprinkle of stars, and a dash of giggles... <giggle> Oops! Pardon me! That was a sparkle burp!"
+    },
+    {
+      "file": "06-pip",
+      "title": "Pip",
+      "character": "pip",
+      "line": "Mew? <short pause> Mew-boo! <giggle> I'm Pip! I'm the littlest ghost on Hollow Hill, and I'm still learning to be spooky. <short pause> Mew... boo? Did that work?"
+    },
+    {
+      "file": "07-grandma-cobweb",
+      "title": "Grandma Cobweb",
+      "character": "cobweb",
+      "line": "Oh, hello, dearie! <chuckle> Grandma Cobweb here, knitting a brand new web for the parade. Knit one, purl spooky... <short pause> knit one, purl spooky. There! Isn't it sparkly?"
+    },
+    {
+      "file": "08-sir-hoot",
+      "title": "Sir Hoot",
+      "character": "hoot",
+      "line": "Ahem! Whoo goes there? <short pause> Ah, a trick-or-treater! Sir Hoot, Professor of Night-time Studies. Today's lesson: always say thank you for your treats. Class dismissed!"
+    },
+    {
+      "file": "09-goodnight",
+      "title": "Old Man Moon",
+      "character": "moon",
+      "line": "What a parade! <chuckle> Now off you go, little ones, and fill those buckets right up. Happy Halloween from all of us on Hollow Hill! <short pause> Shine on... shine on."
+    }
+  ]
+}

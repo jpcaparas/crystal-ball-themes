@@ -52,7 +52,7 @@ const themesDir = path.join(root, 'assets', 'themes');
 for (const id of fs.existsSync(themesDir) ? fs.readdirSync(themesDir).sort() : []) {
   if (!fs.statSync(path.join(themesDir, id)).isDirectory()) continue;
   const clips = fs.readdirSync(path.join(themesDir, id)).filter((f) => f.endsWith('.mp4')).length;
-  check(true, clips > 0, `built-in theme "${id}" is rendered (${clips} clips)`,
+  check(true, clips > 0, `built-in theme "${id}" is rendered (${clips} clip${clips === 1 ? '' : 's'})`,
     'Run `npm run themes` (uses saved art and voices; no API key needed).');
 }
 

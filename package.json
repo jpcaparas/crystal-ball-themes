@@ -14,11 +14,12 @@
     "test": "node --test test/*.test.js",
     "test:tools": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/smoke_test.py",
     "ball": "node src/cli.js",
-    "themes": "npm run themes:halloween && npm run themes:monsters && npm run themes:fortunes && npm run themes:spirit",
+    "themes": "npm run themes:halloween && npm run themes:monsters && npm run themes:fortunes && npm run themes:spirit && npm run themes:seance",
     "themes:halloween": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/make_halloween.py assets/themes/halloween",
     "themes:monsters": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/voice_theme.py tools/scripts/monster-parade.json",
     "themes:fortunes": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/voice_theme.py tools/scripts/fortune-teller.json",
     "themes:spirit": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/spirit_theme.py tools/scripts/spirit-in-the-ball.json",
+    "themes:seance": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/spirit_theme.py tools/scripts/midnight-seance.json",
     "icon": "PYTHONDONTWRITEBYTECODE=1 uv run --with pillow --with numpy python tools/make_icon.py assets/icon",
     "screenshot": "electron . --screenshot=dist/screenshot.png",
     "package": "electron-packager . \"Crystal Ball Themes\" --platform=darwin --arch=arm64 --out=dist --overwrite --icon=assets/icon/icon.icns --app-bundle-id=com.jpcaparas.crystal-ball-themes --no-asar --ignore=^/tools --ignore=^/test --ignore=^/docs --ignore=^/assets/sources --ignore=^/dist --ignore=^/AGENTS.md --ignore=^/\\\\.editorconfig --ignore=^/CONTRIBUTING.md"

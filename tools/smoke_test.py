@@ -46,6 +46,8 @@ def main():
                                                                "--draft", "--out", f"{d}/fortunes", "--only", "02-")),
             ("talking head (spirit_theme)", lambda: run(os.path.join(HERE, "spirit_theme.py"), os.path.join(SCRIPTS, "spirit-in-the-ball.json"),
                                                         "--draft", "--out", f"{d}/spirit", "--only", "04-")),
+            ("talking head, moody look (spirit_theme)", lambda: run(os.path.join(HERE, "spirit_theme.py"),
+                                                                    os.path.join(SCRIPTS, "midnight-seance.json"), "--draft", "--out", f"{d}/seance")),
         ]
         failed = 0
         for name, job in jobs:

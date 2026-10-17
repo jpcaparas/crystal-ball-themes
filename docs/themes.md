@@ -41,7 +41,7 @@ flowchart TD
 | --- | --- | --- | --- |
 | Drawn animation | Shapes drawn frame by frame in Python | No | Halloween |
 | Voiced scenes | A painted picture with slow zoom, effects, a caption and a voice | Only to make new pictures and voices | Monster Parade, Fortune Teller |
-| Talking head | A face that blinks and moves its mouth in time with a voice | Only to make new pictures and voices | Spirit in the Ball |
+| Talking head | A face that blinks and moves its mouth in time with a voice | Only to make new pictures and voices | Spirit in the Ball, Midnight Séance |
 
 ## Drawn animations
 
@@ -185,8 +185,34 @@ the regions look wrong, delete the variant pictures and generate them again.
 }
 ```
 
-`reference` is a picture under `assets/sources/` (optional in spirit, but it keeps a character
-consistent). The variants must keep the head in exactly the same place; the prompts above say so.
+`reference` is a picture under `assets/sources/` (optional, but it keeps a character consistent).
+The variants must keep the head in exactly the same place; the prompts above say so.
+
+### Look options
+
+Add a `look` block to change how the head is shown. Without it, the head floats on black over
+generated mist (Spirit in the Ball).
+
+```json
+"look": { "background": "baked", "sway": 8, "mist": 0.3, "glass": 0.12, "grade": "spectral-green",
+          "light": [0.55, 1.0, 0.7], "bloom": [0.35, 1.0, 0.6], "scale": 1.06 }
+```
+
+| Option | Meaning |
+| --- | --- |
+| `background` | `"baked"`: the picture brings its own background (ask for one in the `head` prompt) and fills the ball |
+| `sway` | How far hair and mist drift, in pixels (try 6 to 10). The face never moves, so lip-sync stays clean. |
+| `mist` | How strongly extra moving mist is layered on top (0 to 1) |
+| `glass` | A crystal-ball bulge that magnifies the middle (try 0.08 to 0.15) |
+| `grade` | A colour effect over the finished picture: `"moody"` (midnight blue, softer colour, amber light) or `"spectral-green"` (a ghostly green wash). Both add a low drone to the sound. |
+| `light` | Colour of the soft light under her face, which brightens as she speaks, as `[red, green, blue]` from 0 to 1 |
+| `bloom` | Colour of a glow around the brightest parts, which also brightens as she speaks |
+| `scale` | Zoom on the picture (1.06 leaves room for the gentle float) |
+
+Keep the picture itself in natural colours and let `grade` add the tint; it looks more ghostly and
+the lip-sync edits stay consistent.
+
+Midnight Séance (`tools/scripts/midnight-seance.json`) uses all of them.
 
 Commands are the same as for voiced scenes, using `tools/spirit_theme.py`.
 
@@ -206,6 +232,30 @@ Commands are the same as for voiced scenes, using `tools/spirit_theme.py`.
 | Schedar | Even | Gacrux | Mature | Pulcherrima | Forward |
 | Achird | Friendly | Zubenelgenubi | Casual | Vindemiatrix | Gentle |
 | Sadachbia | Lively | Sadaltager | Knowledgeable | Sulafat | Warm |
+
+**Pick a voice by ear, not by name.** Many voices sound younger than you'd expect, and the acting
+direction matters as much as the voice. For an old fortune teller, Gacrux with the direction
+"a very old woman in her seventies, her voice crackly, raspy and thin with age…" sounded 65 to 70;
+the same voice with a plainer direction sounded about 35. Whispered lines always sound younger.
+
+Audition a few voices before generating every line (needs the key):
+
+```bash
+python3 tools/audition_voices.py tools/scripts/my-theme.json Gacrux,Vindemiatrix,Sulafat --style "a very old woman..."
+```
+
+It says the first line (or `--line`) in each voice, saves the samples, and asks a Gemini audio model
+how old each speaker sounds, averaging three listens because single guesses vary.
+
+**No prebuilt voice fits?** Design one from a description:
+
+```bash
+python3 tools/design_voice.py "An elderly storyteller with a dry, crackly voice..." --name "My character" --sample /tmp/preview.wav
+```
+
+It prints an id like `voice_abc123`; use it as the `voice` in a script and audition it like any
+other. Designed voices belong to the Google project that made them, so write the description in the
+script's `note` too; anyone forking can design their own from it. Saved lines keep working either way.
 
 **Acting** goes in `style` ("deep and theatrical, playful rather than scary"). **Sounds** go inline
 in the line, in angle brackets, where they should happen:

@@ -10,7 +10,7 @@ exactly the format it needs, without ever losing what was there before. It's sim
 
 <img src="docs/preview.png" width="200" align="right" alt="The desktop preview: a round crystal ball on a dark stand, playing the Happy Halloween clip" />
 
-It comes with five themes, including talking monsters, a fortune teller and a spirit who floats
+It comes with built-in themes including talking monsters, a fortune teller and a spirit who floats
 inside the ball. You can make your own from any videos, GIFs or photos, and preview any theme on
 your desktop first.
 
@@ -98,6 +98,7 @@ Deleting a clip or a theme moves it to the Bin, so it can always be recovered.
 | 🧛 **Monster Parade** | Seven classic monsters say hello in their own voices: Count Dracula, the Headless Horseman, Frankenstein's creature, the Mummy, the Werewolf, the Witch and a shy ghost. |
 | 🔮 **Fortune Teller** | Madame Zara looks into her crystal ball and tells nine kind, funny fortunes. |
 | 🕯️ **Spirit in the Ball** | Madame Zara's spirit floats *inside* the ball, blinking and mouthing five spooky rhymes, lip-synced to her voice. |
+| 🌙 **Midnight Séance** | A younger Madame Zara's spirit, silver hair drifting through the mist and glowing ghostly green inside the ball, with ten fortunes, riddles and rhymes. |
 | 🦇 **Nightmare Before Christmas** | Starts empty, for clips or pictures you own. |
 | 💾 **Saved from ball** | Made automatically the first time you replace videos the app hasn't seen before (like the ones the ball came with), so you can always put them back. |
 
@@ -167,13 +168,13 @@ The app is unsigned, which is fine on the Mac that built it. To give it to someo
 | `npm run setup` | Render built-in themes, then check the machine |
 | `npm run doctor` | Check this Mac has everything, with fixes for anything missing |
 | `npm test` | Fast tests of the app's logic, including real video conversions |
-| `npm run test:tools` | Check every theme tool end to end (about a minute; no API key) |
+| `npm run test:tools` | Check every theme tool end to end (a few minutes; no API key) |
 | `npm run ball -- status` | What's connected, and which theme is on the ball |
 | `npm run ball -- themes` | List themes and their ids |
 | `npm run ball -- apply builtin/halloween` | Put a theme on the ball from Terminal |
 | `npm run ball -- add user/<id> clip.mp4 [--fit]` | Add files to one of your themes |
 | `npm run ball -- eject` | Eject the ball |
-| `npm run themes` | Re-render all built-in themes (`themes:halloween`, `themes:monsters`, `themes:fortunes`, `themes:spirit` for one) |
+| `npm run themes` | Re-render all built-in themes (`themes:halloween`, `themes:monsters`, `themes:fortunes`, `themes:spirit`, `themes:seance` for one) |
 | `npm run icon` | Re-draw the app icon |
 | `npm run screenshot` | Open the app, save `dist/screenshot.png`, close |
 | `npm run package` | Build the Mac app into `dist/` |

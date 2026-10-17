@@ -127,6 +127,31 @@ def generate_speech(text, out_path, voice="Kore", style=None):
     return out_path
 
 
+def create_voice(description, display_name, gender="female", language_code="en-US", sample_path=None):
+    """Design a custom voice from a description (stored in the Google project that owns the key).
+    Returns its id ("voice_..."), usable anywhere a voice name is. Optionally saves the preview audio."""
+    body = {"store": True, "voice": {
+        "model": TTS_MODEL, "type": "prompted", "display_name": display_name[:60],
+        "gender": gender, "language_code": language_code, "prompted": {"input": description},
+    }}
+    url = API.replace("/interactions", "/voices")
+    req = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                 headers={"x-goog-api-key": api_key(), "Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=180) as resp:
+            out = json.load(resp)
+    except urllib.error.HTTPError as err:
+        raise RuntimeError(f"Gemini API {err.code}: {err.read().decode(errors='replace')[:500]}") from None
+    voice = out.get("voice", out)
+    voice_id = voice.get("id") or voice.get("name", "").split("/")[-1]
+    if not voice_id:
+        raise RuntimeError(f"No voice id in the response: {json.dumps(out)[:300]}")
+    sample = out.get("sample_audio") or voice.get("sample_audio")
+    if sample_path and sample and sample.get("data"):
+        _write(sample_path, base64.b64decode(sample["data"]))
+    return voice_id
+
+
 def _write(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = f"{path}.part"

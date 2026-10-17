@@ -68,7 +68,7 @@ flowchart LR
 | Check | Command | How long |
 | --- | --- | --- |
 | Logic tests (uses temporary folders, never your real themes) | `npm test` | Seconds |
-| Theme tools still produce ball-ready video | `npm run test:tools` | About a minute |
+| Theme tools still produce ball-ready video | `npm run test:tools` | A few minutes |
 | Machine has everything | `npm run doctor` | Seconds |
 | See the app | `npm start` | |
 | Screenshot without clicking | `npx electron . --screenshot=dist/x.png --wait=4000` | Seconds |

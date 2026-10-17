@@ -38,7 +38,7 @@ Run these from fastest to slowest. All must pass before you call a change done.
 | --- | --- | --- |
 | `npm run doctor` | The machine has what the project needs | Seconds |
 | `npm test` | `src/lib` logic, including real ffmpeg conversions, in temp folders | Seconds |
-| `npm run test:tools` | Each theme tool renders a clip in the ball's exact format (draft mode, no API) | ~1 minute |
+| `npm run test:tools` | Each theme tool renders a clip in the ball's exact format (draft mode, no API) | ~4 minutes |
 | `npx electron . --screenshot=dist/x.png --wait=4000` | The window renders; open the PNG and look at it | Seconds |
 
 Screenshot variants: add `--open=<theme id>` for a theme sheet, or `--preview=<theme id>` for the
@@ -87,8 +87,9 @@ These protect the family's videos and the hardware. Do not work around them.
 | Terminal commands | `src/cli.js` |
 | Drawn theme (Halloween) | `tools/make_halloween.py` |
 | Voiced themes | `tools/voice_theme.py`, `tools/scripts/*.json` |
-| Talking-head theme | `tools/spirit_theme.py`, `tools/scripts/spirit-in-the-ball.json` |
+| Talking-head themes | `tools/spirit_theme.py`, `tools/scripts/spirit-in-the-ball.json`, `tools/scripts/midnight-seance.json` |
 | Gemini API client | `tools/gemini_media.py` |
+| Choosing a voice (samples + apparent age) | `tools/audition_voices.py`; custom voices: `tools/design_voice.py` |
 | Setup checks | `tools/doctor.mjs` |
 | Tools smoke test | `tools/smoke_test.py` |
 

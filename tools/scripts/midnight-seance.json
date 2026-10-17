@@ -1,0 +1,85 @@
+{
+  "id": "midnight-seance",
+  "name": "Midnight Séance",
+  "emoji": "🌙",
+  "note": "A younger Madame Zara's spirit, silver hair drifting in the mist, glowing ghostly green inside the ball.",
+  "reference": "spirit-in-the-ball/art/head.jpg",
+  "head": "A younger version of the woman in the reference picture, about 30 years old (same kind eyes, same gold hoop earrings), with no head wrap: long, flowing silver-white hair floating outward in every direction as if drifting underwater, spreading all the way to the edges of the picture and framing her face like a halo of smoke. Front-facing, looking at the viewer, calm and mysterious, eyes open, lips gently closed. Low-key lighting with deep shadows and a soft light on her face from below. The background is thick swirling mist, not solid black. Her neck fades into the mist. Her face is centred and takes up about the middle 40% of the picture. Natural, true-to-life colours. Painterly and cinematic, mysterious but kind, not scary. Square composition. No text, no frame, no border, no crystal ball.",
+  "variants": {
+    "mouth-mid": "Edit this picture. Keep everything exactly the same: same face, same hair, same mist, same position and size, same lighting and colours. Change only her mouth: lips slightly parted, as if in the middle of saying a word.",
+    "mouth-open": "Edit this picture. Keep everything exactly the same: same face, same hair, same mist, same position and size, same lighting and colours. Change only her mouth: open in a round 'oh' shape, as if chanting 'ooooh', showing a small dark open mouth.",
+    "blink": "Edit this picture. Keep everything exactly the same: same face, same hair, same mist, same position and size, same lighting and colours. Change only her eyes: gently closed, as if blinking."
+  },
+  "look": {
+    "background": "baked",
+    "sway": 8,
+    "mist": 0.3,
+    "glass": 0.12,
+    "grade": "spectral-green",
+    "light": [
+      0.55,
+      1.0,
+      0.7
+    ],
+    "bloom": [
+      0.35,
+      1.0,
+      0.6
+    ],
+    "scale": 1.06
+  },
+  "voice": "Gacrux",
+  "style": "a very old woman in her seventies, her voice crackly, raspy and thin with age; a theatrical old fortune teller, dramatic and mysterious, drawing out her words with long knowing pauses, with a mischievous, grandmotherly warmth",
+  "scenes": [
+    {
+      "file": "01-the-mists-part",
+      "title": "The mists part",
+      "line": "<long pause> Mmmm... <breath> the mists are parting... <short pause> I see you there, little traveller of the night. <whispers> Come closer... closer... <chuckle> Your future glows like a jack-o'-lantern: bright, and full of sweets. <short pause> Now off you go... and have a happy, haunted Halloween."
+    },
+    {
+      "file": "02-knock-three-times",
+      "title": "Knock three times",
+      "line": "Knock three times upon the glass... <short pause> one... <short pause> two... <short pause> three. <gasp> Oh! You woke me. <chuckle> No matter. I was only dreaming of toffee apples."
+    },
+    {
+      "file": "03-the-candles-flame",
+      "title": "The candle's flame",
+      "line": "Look deep into the candle's flame... <long pause> I see a pillowcase, heavy with treats... and someone who says thank you at every door. <whispers> That someone... is you."
+    },
+    {
+      "file": "04-spirits-on-the-street",
+      "title": "Spirits on the street",
+      "line": "Tonight, the spirits walk the streets in costumes, just like you. <short pause> So if a little skeleton waves hello... <chuckle> wave back. They love that."
+    },
+    {
+      "file": "05-a-riddle",
+      "title": "A riddle from the mist",
+      "line": "A riddle from the mist... <short pause> I have a face that glows, but never a nose. I sit by the door when the cold wind blows. <long pause> What am I? <laugh> A jack-o'-lantern, of course!"
+    },
+    {
+      "file": "06-a-moonlight-wish",
+      "title": "A moonlight wish",
+      "line": "The moon is full, and the night is deep... <breath> make a wish, and whisper it to me. <whispers> I promise I won't tell the bats."
+    },
+    {
+      "file": "07-the-cats-secret",
+      "title": "The cat's secret",
+      "line": "My black cat told me a secret... <short pause> <whispers> the house on the corner has the very best chocolate. <chuckle> But you didn't hear it from me."
+    },
+    {
+      "file": "08-brave-hearts",
+      "title": "Brave hearts",
+      "line": "Do not be afraid of the dark, little one. <short pause> The dark is only the night... wearing its Halloween costume. <sigh> And you are braver than any ghost."
+    },
+    {
+      "file": "09-the-mists-whisper",
+      "title": "The mists whisper",
+      "line": "The mists are whispering your name... <long pause> they say you will laugh so hard tonight... your mask will fall right off! <laugh>"
+    },
+    {
+      "file": "10-until-next-year",
+      "title": "Until next year",
+      "line": "The candles are burning low... <short pause> the mist is calling me home. <breath> Until next Halloween, my dears... <whispers> sweet dreams... and sweeter treats."
+    }
+  ]
+}

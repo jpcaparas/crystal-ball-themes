@@ -208,6 +208,6 @@ Built-in themes are made by tools in `tools/`, not by the app. There are three k
 | --- | --- | --- |
 | Drawn animation | `tools/make_halloween.py` | Halloween |
 | Voiced scenes | `tools/voice_theme.py` + a script in `tools/scripts/` | Monster Parade, Fortune Teller |
-| Talking head | `tools/spirit_theme.py` + a script in `tools/scripts/` | Spirit in the Ball |
+| Talking head | `tools/spirit_theme.py` + a script in `tools/scripts/` | Spirit in the Ball, Midnight Séance |
 
 [docs/themes.md](themes.md) explains each one and how to make your own.

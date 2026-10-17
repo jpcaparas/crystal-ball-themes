@@ -191,6 +191,68 @@ def screen(a, b):
     return 1 - (1 - a) * (1 - b)
 
 
+def smoothstep_arr(a, b, x):
+    t = np.clip((x - a) / (b - a), 0.0, 1.0)
+    return t * t * (3 - 2 * t)
+
+
+def make_warp(sway_amp=0.0, bulge=0.0):
+    """Remap for each frame: slow underwater drift for hair and mist (never the face, so lip-sync stays
+    still) and an optional crystal-ball bulge (the middle is magnified, like looking into a glass ball)."""
+    yy, xx = np.mgrid[0:W, 0:W].astype(np.float32)
+    cx, cy = W * 0.5, W * 0.47
+    dist = np.hypot(xx - cx, yy - cy)
+    wgt = smoothstep_arr(0.17, 0.42, dist / W)
+    ux, uy = (xx - cx) / (dist + 1e-3), (yy - cy) / (dist + 1e-3)
+    k = 2 * np.pi / (W * 0.24)
+    if bulge:
+        r = np.hypot(xx - W / 2, yy - W / 2) / (W / 2)
+        scale = 1 - bulge + bulge * np.minimum(r, 1.0) ** 2
+        bx, by = W / 2 + (xx - W / 2) * scale, W / 2 + (yy - W / 2) * scale
+    else:
+        bx, by = xx, yy
+
+    def warp(img, t):
+        sx, sy = bx, by
+        if sway_amp:
+            dx = sway_amp * wgt * (np.sin(yy * k + t * 0.9) + 0.5 * np.sin(yy * k * 0.5 - t * 0.6 + 1.3))
+            dy = sway_amp * wgt * np.sin(xx * k * 0.8 + t * 0.7 + 2.1)
+            breathe = sway_amp * 0.7 * wgt * math.sin(t * 0.8)  # hair gently billows in and out
+            sx, sy = sx - dx - ux * breathe, sy - dy - uy * breathe
+        sx = np.clip(sx, 0, W - 1.001)
+        sy = np.clip(sy, 0, W - 1.001)
+        x0, y0 = sx.astype(np.int32), sy.astype(np.int32)
+        fx, fy = (sx - x0)[..., None], (sy - y0)[..., None]
+        return (img[y0, x0] * (1 - fx) * (1 - fy) + img[y0, x0 + 1] * fx * (1 - fy)
+                + img[y0 + 1, x0] * (1 - fx) * fy + img[y0 + 1, x0 + 1] * fx * fy)
+
+    return warp
+
+
+def grade_moody(img):
+    """Low-key and mysterious: a little less colour, midnight-blue shadows, a touch of amber in the light."""
+    lum = (img @ np.array([0.299, 0.587, 0.114], np.float32))[..., None]
+    img = lum + (img - lum) * 0.8
+    shade = (1 - lum) ** 2 * 0.4
+    img = img * (1 - shade) + np.array([0.04, 0.06, 0.16], np.float32) * shade
+    img = img + (np.array([1.0, 0.8, 0.58], np.float32) - img) * (lum ** 3) * 0.12
+    return np.clip(img, 0, 1) ** 1.1
+
+
+def grade_spectral_green(img):
+    """A ghostly green wash over the finished picture (the art itself keeps its natural colours):
+    luminance mapped through a deep-green to pale-mint ramp, blended over the original."""
+    lum = (img @ np.array([0.299, 0.587, 0.114], np.float32))[..., None]
+    dark = np.array([0.0, 0.05, 0.035], np.float32)
+    mid = np.array([0.2, 0.66, 0.46], np.float32)
+    light = np.array([0.86, 1.0, 0.86], np.float32)
+    toned = np.where(lum < 0.5, dark + (mid - dark) * (lum / 0.5), mid + (light - mid) * ((lum - 0.5) / 0.5))
+    return np.clip(img * 0.3 + toned * 0.7, 0, 1) ** 1.05
+
+
+GRADES = {"moody": grade_moody, "spectral-green": grade_spectral_green}
+
+
 def render_scene(script, scene, face, voice_path, out_path):
     voice = vt.read_voice(voice_path)
     vsecs = len(voice) / SR
@@ -219,6 +281,60 @@ def render_scene(script, scene, face, voice_path, out_path):
         r = layer.rotate(angle, resample=Image.BILINEAR)
         o = (big - W) // 2
         return np.asarray(r.crop((o, o, o + W, o + W)), np.float32)[..., None] / 255
+
+    look = script.get("look", {})
+    warp = (make_warp(look.get("sway", 0) * mh.S, look.get("glass", 0))
+            if look.get("sway") or look.get("glass") else None)
+    grade = GRADES.get(look.get("grade"))
+    light = np.array(look.get("light", [1.0, 0.62, 0.3]), np.float32)  # under-light colour
+    bloom = np.array(look["bloom"], np.float32) if look.get("bloom") else None
+    under = Image.new("L", (W, W), 0)
+    ImageDraw.Draw(under).ellipse([W * 0.3, W * 0.55, W * 0.7, W * 0.95], fill=255)
+    under = np.asarray(under.filter(ImageFilter.GaussianBlur(70)), np.float32)[..., None] / 255
+
+    def render_baked(t):
+        """The picture brings its own misty background; it fills the ball, and its hair and mist drift."""
+        i = min(n - 1, int(t * FPS))
+        e = float(env[i])
+        appear = smoothstep(0.2, 1.6, t) * (1 - smoothstep(secs - 1.3, secs - 0.1, t))
+        blink = max((max(0.0, 1 - abs((t - b) / 0.09 - 1)) for b in blinks), default=0.0)
+        f = face.frame(e, blink)
+        size = int(W * look.get("scale", 1.06))
+        head = Image.fromarray((f * 255).astype(np.uint8)).rotate(0.8 * math.sin(t * 0.5), resample=Image.BICUBIC)
+        head = head.resize((size, size), Image.BILINEAR)
+        o = (size - W) // 2
+        bob = int(round(4 * math.sin(t * 1.1)))
+        img = np.asarray(head.crop((o, o - bob, o + W, o + W - bob)), np.float32) / 255
+        if warp:
+            img = warp(img, t)
+        m = look.get("mist", 0.3)
+        img = screen(img, spun(mist_a, t * 5) * np.array([0.30, 0.25, 0.60]) * m)
+        img = screen(img, spun(mist_b, -t * 4) * np.array([0.10, 0.40, 0.50]) * m * 0.7)
+        img = screen(img, under * light * (0.12 + 0.3 * e))  # under-light breathes with her voice
+        if grade:
+            img = grade(img)
+        if bloom is not None:  # soft glow around the brightest parts, stronger as she speaks
+            q = Image.fromarray((img * 255).astype(np.uint8)).convert("L").resize((W // 4, W // 4))
+            q = q.point(lambda v: max(0, v - 70) * 2).filter(ImageFilter.GaussianBlur(9)).resize((W, W), Image.BILINEAR)
+            img = screen(img, np.asarray(q, np.float32)[..., None] / 255 * bloom * (0.45 + 0.35 * e + 0.05 * math.sin(t * 9)))
+        off = int((t / secs) * W)
+        fm = np.asarray(front.crop((off, 0, off + W, W)), np.float32)[..., None] / 255
+        low = np.linspace(0, 1, W, dtype=np.float32)[:, None, None] ** 2
+        img = screen(img, fm * low * np.array([0.35, 0.4, 0.6]) * 0.35)
+        img = np.clip(img * (0.15 + 0.85 * appear) + glass * 0.6, 0, 1)
+        out = Image.fromarray((img * 255).astype(np.uint8))
+        if appear < 1:
+            out = out.filter(ImageFilter.GaussianBlur(10 * (1 - appear)))
+        out = out.convert("RGBA")
+        d = ImageDraw.Draw(out)
+        for x, y, ph, sp in sparkles[:14]:
+            a = max(0.0, math.sin(t * sp * 1.5 + ph)) * 0.6 * appear
+            if a > 0.1:
+                r = 6 * a
+                c = (220, 230, 255, int(200 * a))
+                d.line([(x - r, y), (x + r, y)], fill=c, width=2)
+                d.line([(x, y - r), (x, y + r)], fill=c, width=2)
+        return mh.finish(out)
 
     def render(t):
         i = min(n - 1, int(t * FPS))
@@ -277,10 +393,13 @@ def render_scene(script, scene, face, voice_path, out_path):
     for delay, gain, ch in ((0.13, 0.30, 1), (0.26, 0.20, 0), (0.41, 0.13, 1), (0.6, 0.08, 0)):
         s = int(delay * SR)
         wet[s:, ch] += dry[: len(dry) - s, ch] * gain
+    if look.get("grade") in GRADES:  # a low drone under everything for the darker mood
+        audio += mh.to_stereo(mh.tone(55.0, secs, (0.6, 0.3, 0.1), 2.0, 2.0, vibrato=0.003, vib_rate=0.15) * 0.08)
     i = int(LEAD * SR)
     j = min(len(audio), i + len(wet))
     audio[i:j] += wet[: j - i]
-    mh.encode(out_path, secs, render, mh.master(audio, secs, peak=0.8, fade=0.3))
+    frame = render_baked if look.get("background") == "baked" else render
+    mh.encode(out_path, secs, frame, mh.master(audio, secs, peak=0.8, fade=0.3))
 
 
 # ---------------------------------------------------------------- main

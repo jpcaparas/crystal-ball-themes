@@ -4,11 +4,14 @@
 // Only an allowlist of files goes into the app, so nothing else in the folder (a .env with an API key,
 // generated sources, the family's own media, notes) can ever end up inside a built app. Electron
 // "fuses" are then flipped so the app can't be reused as a general-purpose Node.js runtime.
+// If tools/build_ffmpeg.sh has been run, its ffmpeg goes in too (Contents/Resources/ffmpeg), so the
+// app works on Macs without Homebrew. Releases always include it.
 //
 // Usage: npm run package
 
 import { packager } from '@electron/packager';
 import { flipFuses, FuseVersion, FuseV1Options } from '@electron/fuses';
+import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT } from './media_plan.mjs';
 
@@ -31,7 +34,11 @@ export const FUSES = {
   [FuseV1Options.EnableCookieEncryption]: true,
 };
 
+/** The ffmpeg built by tools/build_ffmpeg.sh for this architecture, if there is one. */
+export const ffmpegDir = (arch = process.arch) => path.join(ROOT, 'vendor', `darwin-${arch}`, 'ffmpeg');
+
 export async function build({ arch = process.arch, out = path.join(ROOT, 'dist') } = {}) {
+  const bundled = fs.existsSync(path.join(ffmpegDir(arch), 'ffmpeg')) ? [ffmpegDir(arch)] : [];
   const [appPath] = await packager({
     dir: ROOT,
     name: 'Crystal Ball Themes',
@@ -44,6 +51,7 @@ export async function build({ arch = process.arch, out = path.join(ROOT, 'dist')
     appCategoryType: 'public.app-category.utilities',
     asar: false, // ffmpeg reads the bundled clips straight from disk
     ignore: (name) => !shipped(name),
+    extraResource: bundled,
   });
   const app = path.join(appPath, 'Crystal Ball Themes.app');
   await flipFuses(app, { version: FuseVersion.V1, resetAdHocDarwinSignature: true, ...FUSES });
@@ -52,5 +60,6 @@ export async function build({ arch = process.arch, out = path.join(ROOT, 'dist')
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const app = await build();
-  console.log(`Built ${path.relative(ROOT, app)}`);
+  const withFfmpeg = fs.existsSync(path.join(app, 'Contents', 'Resources', 'ffmpeg'));
+  console.log(`Built ${path.relative(ROOT, app)} (${withFfmpeg ? 'with its own ffmpeg' : 'using ffmpeg from Homebrew'})`);
 }

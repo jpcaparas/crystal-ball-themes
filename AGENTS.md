@@ -24,6 +24,7 @@ Read before changing behaviour:
 | [docs/architecture.md](docs/architecture.md) | How the code fits together, the IPC API, data locations |
 | [docs/themes.md](docs/themes.md) | The clip format, theme script formats, and theme tools |
 | [docs/media.md](docs/media.md) | Making a theme's pictures and voices with any model (they're not in git) |
+| [docs/releasing.md](docs/releasing.md) | How releases are built and published, and the bundled ffmpeg |
 | [docs/hardware.md](docs/hardware.md) | Everything known about the device, and the firmware research |
 | [SECURITY.md](SECURITY.md) | How the app is locked down, and how to report a problem |
 
@@ -110,7 +111,12 @@ The details and checklists are in [.agents/skills/public-repo-safety/SKILL.md](.
 8. **Commit messages and PR text** are plain and harness-neutral: no AI attribution trailers or
    footers. Instructions live in this one `AGENTS.md` (no per-tool instruction files).
 9. **Ask first** before creating the GitHub repository, pushing, changing its visibility or
-   settings, rewriting history, or spending money on an API.
+   settings, rewriting history, bumping the version (which publishes a release), or spending money
+   on an API.
+10. **Releases are only built by the release workflow**, never uploaded by hand, so every download
+   has provenance. The bundled ffmpeg is GPL: keep its licence, `SOURCES.txt` and the
+   `ffmpeg-sources.tar` release asset, and only change its pins after checking the checksum
+   against a second source.
 
 ## Skills
 
@@ -146,6 +152,9 @@ your task.
 | Setup checks | `tools/doctor.mjs` |
 | Tools smoke test | `tools/smoke_test.py` |
 | Packaging (allowlist, fuses) and its check | `tools/package.mjs`, `tools/verify_package.mjs` |
+| The ffmpeg bundled in releases (pinned sources) | `tools/build_ffmpeg.sh` |
+| Disk image for downloads | `tools/make_dmg.mjs` |
+| Releases | `.github/workflows/release.yml`; bump `version` in `package.json` to publish |
 | Repo safety checks | `test/repo-safety.test.js`, `.agents/skills/public-repo-safety/` |
 | CI, security scans, Dependabot | `.github/workflows/`, `.github/dependabot.yml` |
 

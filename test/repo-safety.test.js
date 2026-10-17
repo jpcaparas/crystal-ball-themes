@@ -92,8 +92,8 @@ test('instructions stay harness-neutral (one AGENTS.md, no per-tool files)', { s
   assert.ok(files.includes('AGENTS.md'));
 });
 
-test('git ignores keys, generated media, renders and build output', { skip }, () => {
-  for (const p of ['.env', '.env.local', 'assets/sources/x/art/head.jpg', 'assets/themes/x/01-a.mp4', 'dist/a', 'node_modules/a']) {
+test('git ignores keys, generated media, renders, build output and the built ffmpeg', { skip }, () => {
+  for (const p of ['.env', '.env.local', 'assets/sources/x/art/head.jpg', 'assets/themes/x/01-a.mp4', 'dist/a', 'node_modules/a', 'vendor/darwin-arm64/ffmpeg/ffmpeg']) {
     assert.doesNotThrow(() => git('check-ignore', '-q', '--no-index', p), `${p} should be git-ignored`);
   }
   assert.throws(() => git('check-ignore', '-q', '--no-index', '.env.example'), '.env.example must not be ignored');

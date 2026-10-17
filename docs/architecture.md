@@ -67,9 +67,9 @@ flowchart TB
 | `src/renderer/index.html`, `app.js`, `styles.css` | The main window. |
 | `src/renderer/preview.html`, `preview.js`, `preview.css` | The floating desktop preview. |
 | `src/cli.js` | The Terminal version of the app's actions. |
-| `tools/` | Python and Node tools that make theme videos and the icon, the media plan, packaging (`package.mjs`, `verify_package.mjs`), `doctor` and the tools smoke test. |
-| `test/` | Tests for `src/lib`, the theme scripts and media plan, and the repo safety checks, run with `npm test`. |
-| `.github/` | CI, CodeQL, Scorecard and Dependabot. |
+| `tools/` | Python and Node tools that make theme videos and the icon, the media plan, packaging (`package.mjs`, `verify_package.mjs`, `make_dmg.mjs`, `build_ffmpeg.sh`), `doctor` and the tools smoke test. |
+| `test/` | Tests for `src/lib`, the theme scripts and media plan, the docs' links, and the repo safety checks, run with `npm test`. |
+| `.github/` | CI, releases, CodeQL, Scorecard and Dependabot. |
 | `.agents/skills/` | Task instructions for coding agents, such as keeping this public repository safe. |
 
 **Rule of thumb:** `src/lib` never imports Electron. That keeps the CLI and the tests running the

@@ -62,6 +62,9 @@ jobs:
       - name: Lint (ruff with security rules, JS syntax)
         run: npm run lint
 
+      - name: Lint shell scripts (shellcheck)
+        run: shellcheck tools/*.sh .agents/skills/*/scripts/*.sh
+
       - name: Unit tests, media plan checks and repo safety checks
         run: npm test
 
@@ -190,6 +193,9 @@ jobs:
 
       - name: Check the app (allowlisted files only, fuses set, signature intact)
         run: npm run package:verify
+
+      - name: Disk image
+        run: npm run dmg
 
       - name: The packaged app starts and keeps running
         env:

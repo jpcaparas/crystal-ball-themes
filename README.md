@@ -1,24 +1,46 @@
 # Crystal Ball Themes
 
-[![CI](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/ci.yml/badge.svg)](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/codeql.yml/badge.svg)](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/codeql.yml)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/jpcaparas/crystal-ball-themes/badge)](https://scorecard.dev/viewer/?uri=github.com/jpcaparas/crystal-ball-themes)
+**Change what plays on your glowing "electronic crystal ball" in two clicks.** A free Mac app,
+simple enough for kids.
 
-**Change what plays on a glowing "electronic crystal ball" in two clicks.**
+## Download
 
-A small Mac app for a toy sold as an *electronic crystal ball*: a 7 cm glass dome with a round
-screen inside. Pick a theme, press **Show on the ball**, and the app puts the right videos on it in
-exactly the format it needs, without ever losing what was there before. It's simple enough for kids.
+| Your Mac | Download |
+| --- | --- |
+| **Apple chip** (M1, M2, M3, M4 or later) | **[Download for Apple chip](https://github.com/jpcaparas/crystal-ball-themes/releases/latest/download/Crystal-Ball-Themes-mac-apple-silicon.dmg)** |
+| **Intel processor** | **[Download for Intel](https://github.com/jpcaparas/crystal-ball-themes/releases/latest/download/Crystal-Ball-Themes-mac-intel.dmg)** |
+
+Not sure which you have? Click the Apple menu at the top left of the screen, then **About This
+Mac**. It says either "Chip: Apple M…" or "Processor: Intel". You need macOS 12 or newer.
+
+## Start in four steps
+
+1. **Install.** Open the file you downloaded and drag **Crystal Ball Themes** into **Applications**.
+2. **Open it.** Double-click it in Applications. The first time, macOS says it can't check the app:
+   click **Done**, open **System Settings → Privacy & Security**, scroll down, click **Open Anyway**,
+   and confirm. You only do this once. ([Why?](docs/releasing.md#why-macos-asks-the-first-time))
+3. **Connect the ball.** Turn it off, plug it into the Mac, then hold its middle button until a USB
+   picture shows on the ball.
+4. **Pick a theme** and press **Show on the ball**. Drag in your own videos, GIFs or photos to make
+   new themes.
 
 ![The Crystal Ball Themes app: steps for connecting the ball above a row of theme cards, each with a round preview and Show on the ball, Preview and Open buttons](docs/screenshot.png)
 
 <img src="docs/preview.png" width="200" align="right" alt="The desktop preview: a round crystal ball on a dark stand, playing the Happy Halloween clip" />
 
-It comes with built-in themes including talking monsters, a fortune teller and a spirit who floats
-inside the ball. You can make your own from any videos, GIFs or photos, and preview any theme on
-your desktop first.
+The app puts videos on the ball in exactly the format it needs, without ever losing what was there
+before, and lets you preview any theme on your desktop first. The download comes with a Halloween
+theme. More themes, with monsters, a fortune teller and spirits that talk, can be made from the
+scripts in this project ([how](docs/media.md)).
 
-**Contents:** [Pick your path](#pick-your-path) · [Does it work with my ball?](#does-it-work-with-my-ball) ·
+All versions and what changed: [Releases](https://github.com/jpcaparas/crystal-ball-themes/releases).
+
+[![CI](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/ci.yml/badge.svg)](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/ci.yml)
+[![Release](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/release.yml/badge.svg)](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/release.yml)
+[![CodeQL](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/codeql.yml/badge.svg)](https://github.com/jpcaparas/crystal-ball-themes/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/jpcaparas/crystal-ball-themes/badge)](https://scorecard.dev/viewer/?uri=github.com/jpcaparas/crystal-ball-themes)
+
+**Contents:** [Download](#download) · [Start in four steps](#start-in-four-steps) · [Pick your path](#pick-your-path) · [Does it work with my ball?](#does-it-work-with-my-ball) ·
 [Why use this app](#why-use-this-app) ·
 [Using the app](#using-the-app) · [Themes](#themes) · [Build it yourself](#build-it-yourself) ·
 [Commands](#commands) · [How it works](#how-it-works-in-one-picture) · [Troubleshooting](#troubleshooting) ·
@@ -30,8 +52,9 @@ your desktop first.
 
 | I want to… | Go to |
 | --- | --- |
-| Use the app with my crystal ball | [Using the app](#using-the-app) |
-| Build and run it on my Mac | [Build it yourself](#build-it-yourself) |
+| Just use it with my crystal ball | [Download](#download), then [Using the app](#using-the-app) |
+| Build and run it from the code | [Build it yourself](#build-it-yourself) |
+| Make a release | [docs/releasing.md](docs/releasing.md) |
 | Change it, fork it, or send improvements | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Make a new theme (drawn, voiced, or a talking head) | [docs/themes.md](docs/themes.md) |
 | Make the pictures and voices for the voiced themes, with any AI model | [docs/media.md](docs/media.md) |
@@ -141,10 +164,10 @@ Deleting a clip or a theme moves it to the Bin, so it can always be recovered.
 | 🦇 **Nightmare Before Christmas** | Starts empty, for clips or pictures you own. |
 | 💾 **Saved from ball** | Made automatically the first time you replace videos the app hasn't seen before (like the ones the ball came with), so you can always put them back. |
 
-The last two are created on your Mac as you use the app. Want another theme? See
-[docs/themes.md](docs/themes.md).
+**In the download:** Halloween, plus the last two, which the app creates on your Mac as you use it.
+Want another theme? See [docs/themes.md](docs/themes.md).
 
-Halloween is drawn by code, so it's always there. The other built-in themes are scripts: every
+Halloween is drawn by code, so it's always there. The talking themes are scripts: every
 picture prompt, voice and line is in `tools/scripts/`, but the generated pictures and voices
 themselves aren't kept in this repository. On a new copy you make them once, with Gemini or any
 other image and speech model ([docs/media.md](docs/media.md)), and the app shows each theme as soon
@@ -276,6 +299,9 @@ More diagrams and the full code map are in [docs/architecture.md](docs/architect
   are generated from them on your own Mac: by default with Google's Gemini (Nano Banana 2.1 for
   pictures, Gemini 3.8 Flash TTS for voices), or any model you like. Characters are original or from
   public-domain stories (Dracula, the Headless Horseman, Frankenstein's creature).
+- **Bundled ffmpeg:** the downloadable app includes [FFmpeg](https://ffmpeg.org) with x264 and LAME,
+  built from source and licensed under the GNU GPL version 2 or later. Its licence and exact sources
+  ship with every release ([docs/releasing.md](docs/releasing.md#the-bundled-ffmpeg)).
 - **Security:** see [SECURITY.md](SECURITY.md).
 - The Nightmare Before Christmas theme ships empty, for clips you own.
 - Not affiliated with the ball's maker or sellers, ArtInChip, Leawo, TikTok, Google, or Disney. Product

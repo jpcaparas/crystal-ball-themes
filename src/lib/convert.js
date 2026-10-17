@@ -22,14 +22,23 @@ const GIF_EXT = new Set(['.gif']);
 
 const CANDIDATE_DIRS = ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin'];
 
-/** Apps launched from Finder get a bare PATH, so look in the usual Homebrew places too. */
-function findTool(name) {
+/** Where the packaged app keeps the ffmpeg it ships with (tools/build_ffmpeg.sh), if it has one. */
+function bundledToolsDir(resourcesPath = process.resourcesPath) {
+  return resourcesPath ? path.join(resourcesPath, 'ffmpeg') : null;
+}
+
+/**
+ * An explicit FFMPEG_PATH/FFPROBE_PATH wins, then the copy bundled with the app, then Homebrew and
+ * PATH (apps launched from Finder get a bare PATH, so the usual Homebrew places are listed too).
+ */
+function findTool(name, { bundledDir = bundledToolsDir() } = {}) {
   const env = process.env[`${name.toUpperCase()}_PATH`];
   if (env && fs.existsSync(env)) return env;
-  const dirs = [...CANDIDATE_DIRS, ...(process.env.PATH || '').split(path.delimiter)];
+  const dirs = [bundledDir, ...CANDIDATE_DIRS, ...(process.env.PATH || '').split(path.delimiter)];
   for (const d of dirs) {
+    if (!d) continue;
     const p = path.join(d, name);
-    if (d && fs.existsSync(p)) return p;
+    if (fs.existsSync(p)) return p;
   }
   return null;
 }
@@ -222,6 +231,7 @@ module.exports = {
   IMAGE_SECONDS,
   tools,
   findTool,
+  bundledToolsDir,
   kindOf,
   probe,
   frameFilter,

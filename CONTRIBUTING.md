@@ -159,10 +159,11 @@ checks. Dependabot proposes updates weekly.
 
 ## Sharing the app
 
-`npm run package` builds an app that isn't signed with an Apple Developer ID. It opens fine on the Mac that built it. On another Mac,
-macOS will warn that it's from an unidentified developer; the other person can right-click the app,
-choose **Open**, and confirm. To avoid that, sign and notarise it with an Apple Developer account
-(see Electron's [code signing guide](https://www.electronjs.org/docs/latest/tutorial/code-signing)).
+Point people at the [Releases page](https://github.com/jpcaparas/crystal-ball-themes/releases) or the
+download links at the top of the README. To publish a new release, bump `version` in `package.json`
+and push to `main`; GitHub Actions builds, checks and publishes it.
+[docs/releasing.md](docs/releasing.md) explains the whole process, the bundled ffmpeg, and why macOS
+asks for **Open Anyway** the first time.
 
-The app needs ffmpeg on that Mac only for adding clips and making play-all videos. Showing built-in
-themes works without it.
+`npm run package` on your own Mac builds an app that opens fine there. It uses ffmpeg from Homebrew
+unless you've run `npm run ffmpeg` to build the bundled one.

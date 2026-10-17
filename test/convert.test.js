@@ -6,9 +6,25 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
-const { buildArgs, frameFilter, kindOf, convert, tools, buildMedleyArgs, makeMedley } = require('../src/lib/convert');
+const { buildArgs, frameFilter, kindOf, convert, tools, findTool, bundledToolsDir, buildMedleyArgs, makeMedley } = require('../src/lib/convert');
 
 const after = (args, flag) => args[args.indexOf(flag) + 1];
+
+test('the ffmpeg bundled with the packaged app is preferred over Homebrew and PATH', () => {
+  const resources = fs.mkdtempSync(path.join(os.tmpdir(), 'resources-'));
+  assert.equal(bundledToolsDir(resources), path.join(resources, 'ffmpeg'));
+  assert.equal(bundledToolsDir(undefined), null); // plain Node (CLI, tests): nothing bundled
+  fs.mkdirSync(path.join(resources, 'ffmpeg'));
+  fs.writeFileSync(path.join(resources, 'ffmpeg', 'ffprobe'), '');
+  const saved = process.env.FFPROBE_PATH; // an explicit override would win; take it out for this check
+  delete process.env.FFPROBE_PATH;
+  try {
+    assert.equal(findTool('ffprobe', { bundledDir: bundledToolsDir(resources) }), path.join(resources, 'ffmpeg', 'ffprobe'));
+    assert.notEqual(findTool('ffprobe', { bundledDir: null }), path.join(resources, 'ffmpeg', 'ffprobe'));
+  } finally {
+    if (saved !== undefined) process.env.FFPROBE_PATH = saved;
+  }
+});
 
 test('kindOf sorts inputs', () => {
   assert.equal(kindOf('a.MOV'), 'video');

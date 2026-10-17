@@ -1,5 +1,8 @@
 node_modules/
 dist/
+
+# Built by tools/build_ffmpeg.sh for the packaged app (see docs/releasing.md)
+vendor/
 .DS_Store
 __pycache__/
 .ruff_cache/

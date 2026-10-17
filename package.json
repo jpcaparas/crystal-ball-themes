@@ -1,7 +1,7 @@
 {
   "name": "crystal-ball-themes",
   "productName": "Crystal Ball Themes",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Swap themed video sets on a USB 'electronic crystal ball' display (ArtInChip EVDO-M4) without touching its firmware.",
   "private": true,
   "license": "MIT",
@@ -28,6 +28,8 @@
     "screenshot": "electron . --screenshot=dist/screenshot.png",
     "package": "node tools/package.mjs",
     "package:verify": "node tools/verify_package.mjs",
+    "ffmpeg": "bash tools/build_ffmpeg.sh",
+    "dmg": "node tools/make_dmg.mjs",
     "install-app": "npm run package && mkdir -p \"$HOME/Applications\" && rm -rf \"$HOME/Applications/Crystal Ball Themes.app\" && ditto \"dist/Crystal Ball Themes-darwin-$(node -p process.arch)/Crystal Ball Themes.app\" \"$HOME/Applications/Crystal Ball Themes.app\""
   },
   "engines": {

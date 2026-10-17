@@ -65,3 +65,8 @@ API key to make new pictures and voices (see [docs/media.md](docs/media.md)).
 - Every GitHub Action is pinned to a full commit SHA. Workflows get read-only tokens by default and
   are checked by actionlint, zizmor and CodeQL.
 - Dependabot proposes updates weekly, after a cooldown, so brand-new releases have time to settle.
+- Releases are built only by the release workflow, on fresh GitHub-hosted Macs with no build caches.
+  Each one has checksums and signed build provenance; verify a download with
+  `gh attestation verify <file> --repo jpcaparas/crystal-ball-themes` ([docs/releasing.md](docs/releasing.md)).
+- The ffmpeg bundled in releases is compiled from source pinned by checksum (FFmpeg, LAME) or
+  commit (x264), and links nothing macOS doesn't ship.

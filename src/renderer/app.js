@@ -372,7 +372,7 @@
           <div class="spinner-orb done"></div>
           <h2>All set! 🎉</h2>
           <p>${plural(res.count, 'clip')} from ${esc(t.name)} are on the ball.</p>
-          ${res.playAll ? '<p>It plays them all, one after another, over and over. The dial still skips to a single clip.</p>' : ''}
+          ${res.playAll ? '<p>They’re joined into one long video that plays them all, one after another, over and over.</p>' : ''}
           ${res.warning ? `<p>${esc(res.warning)}</p>` : ''}
           ${res.saved ? `<p>The ${plural(res.saved.count, 'video')} that were already on it are kept in “${esc(res.saved.name)}”.</p>` : ''}
           <div class="actions">

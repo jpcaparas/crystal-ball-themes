@@ -78,7 +78,7 @@ What Crystal Ball Themes does instead, on a Mac:
 | Many clips | One conversion and one copy at a time | Drop in as many as you like; they're kept together as a theme |
 | Onto the ball | Copy files yourself | Finds the ball, writes the theme, reads it back to check, and ejects |
 | Safety | Whatever was on the ball is up to you | Unknown videos are saved as a theme before anything is replaced |
-| Playback | The ball repeats one clip until you press the dial | A joined "play all" video goes first, so a theme plays through on its own |
+| Playback | The ball repeats one clip until you press the dial | A theme goes on as one joined "play all" video, so it plays through on its own |
 | Preview | None | A round, floating preview of any theme on the desktop |
 | Content | Bring your own | Built-in Halloween themes, including talking, lip-synced characters |
 
@@ -128,9 +128,19 @@ decoder accepts more than Baseline. Baseline is used anyway as the safe choice.
 Observed on the device (2026-10-17):
 - **The player repeats the current file.** It does not move on to the next clip by itself; the
   dial's left/right buttons do. With six separate clips on the ball it showed the first one forever.
-  The app therefore puts a joined "play all" video first (`00-<theme>-all.mp4`).
-- It starts with the first file. Name order and write order are the same here (`00-`, `01-`, …), so
+  The app therefore joins a theme's clips into one "play all" video (`00-<theme>-all.mp4`).
+- It started with the first file. Name order and write order are the same here (`00-`, `01-`, …), so
   which of the two the firmware uses is still unknown.
+
+Observed on the device (2026-10-30):
+- **It doesn't always start on the first file.** With Midnight Séance on the ball as the play-all
+  video first and its 10 single clips after it, the ball kept repeating one single clip of the
+  woman instead of the play-all video. The play-all file was fine: all 10 lines in order, the same
+  format as the clips, and ArtInChip's own MP4 parser (Luban-Lite `mov.c`, built on the Mac) read
+  every packet of it. Assumption: the firmware remembers the file it last played (the dial had been
+  used), which is common in these players. Nothing on the FAT volume records it.
+- Since then the app puts the play-all video on the ball **alone**, so there is nothing else to
+  start on.
 
 Not yet verified:
 - whether a video with no audio track plays (the app always adds a silent MP3 track, like the factory files).

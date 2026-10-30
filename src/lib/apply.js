@@ -15,8 +15,8 @@ async function ballHash(file) {
 }
 
 /**
- * Which theme is on the ball: every file belongs to it (a clip or its joined video) and all of
- * its clips are there.
+ * Which theme is on the ball: every file belongs to it (a clip or its joined video), and either
+ * its joined video or all of its clips are there.
  */
 async function whatsOnBall(store, mountPoint) {
   const files = await listBallVideos(mountPoint);
@@ -30,7 +30,8 @@ async function whatsOnBall(store, mountPoint) {
     for (const t of await store.list()) {
       const allTheirs = owners.every((o) => o.some((x) => x.themeId === t.id));
       const clips = owners.filter((o) => o.some((x) => x.themeId === t.id && !x.medley)).length;
-      if (allTheirs && clips === t.clips.length) {
+      const joined = owners.some((o) => o.some((x) => x.themeId === t.id && x.medley));
+      if (allTheirs && (joined || clips === t.clips.length)) {
         themeId = t.id;
         break;
       }
@@ -40,8 +41,8 @@ async function whatsOnBall(store, mountPoint) {
 }
 
 /**
- * Replace the ball's videos with a theme: its joined "play all" video first, then each clip.
- * Anything on the ball that isn't already in one of our themes is saved first as a
+ * Replace the ball's videos with a theme: its joined "play all" video on its own, or the clip
+ * itself for a one-clip theme (and the clips, if joining fails). Anything on the ball that isn't already in one of our themes is saved first as a
  * "Saved from ball" theme, so nothing is ever lost. `makeMedley` is injectable for tests.
  */
 async function applyTheme(store, themeId, mountPoint, onProgress = () => {}, { makeMedley } = {}) {
@@ -77,8 +78,11 @@ async function applyTheme(store, themeId, mountPoint, onProgress = () => {}, { m
     }
   }
 
-  const files = theme.clips.map((c) => ({ path: c.path, name: c.file }));
-  if (medley) files.unshift({ path: medley, name: ballNameFor(store.resolve(themeId).slug) });
+  // The joined video goes on alone. The ball loops whichever file it starts on, and it doesn't
+  // always start on the first, so a single clip beside the joined video can end up repeating.
+  const files = medley
+    ? [{ path: medley, name: ballNameFor(store.resolve(themeId).slug) }]
+    : theme.clips.map((c) => ({ path: c.path, name: c.file }));
   const written = await writeClips(mountPoint, files, onProgress);
 
   // Read back what landed, so a half-written card never reports success.

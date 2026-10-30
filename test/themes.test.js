@@ -60,7 +60,7 @@ test('built-in themes that are not rendered yet are hidden', async () => {
 // Stands in for ffmpeg: the "joined video" is just the clips' bytes back to back.
 const fakeJoin = async (paths, out) => fs.writeFileSync(out, paths.map((p) => fs.readFileSync(p, 'utf8')).join('+'));
 
-test('applying a theme saves unknown ball videos first, puts the joined video first, and recognises the theme', async () => {
+test('applying a theme saves unknown ball videos first, puts only the joined video on, and recognises the theme', async () => {
   const f = fixture();
   const store = await new ThemeStore({ dataDir: f.data, bundledDir: f.bundled }).init();
   fs.writeFileSync(path.join(f.ball, 'video', 'family.mp4'), 'precious');
@@ -71,7 +71,8 @@ test('applying a theme saves unknown ball videos first, puts the joined video fi
   assert.equal(res.saved.count, 1);
   const saved = await store.load(res.saved.id);
   assert.equal(fs.readFileSync(saved.clips[0].path, 'utf8'), 'precious');
-  assert.deepEqual(fs.readdirSync(path.join(f.ball, 'video')).sort(), ['00-halloween-all.mp4', '01-pumpkin.mp4', '02-ghost.mp4']);
+  // Alone, so the ball can't start on (and repeat) a single clip.
+  assert.deepEqual(fs.readdirSync(path.join(f.ball, 'video')), ['00-halloween-all.mp4']);
   assert.equal(fs.readFileSync(path.join(f.ball, 'video', '00-halloween-all.mp4'), 'utf8'), 'pumpkin+ghost');
   assert.equal((await whatsOnBall(store, f.ball)).themeId, 'builtin/halloween');
 
@@ -80,6 +81,16 @@ test('applying a theme saves unknown ball videos first, puts the joined video fi
   assert.equal(back.saved, null);
   assert.equal(back.playAll, false); // one clip, nothing to join
   assert.deepEqual(fs.readdirSync(path.join(f.ball, 'video')), ['family.mp4']);
+});
+
+test('a ball from older versions, with the joined video and every clip, is still recognised', async () => {
+  const f = fixture();
+  const store = await new ThemeStore({ dataDir: f.data, bundledDir: f.bundled }).init();
+  await applyTheme(store, 'builtin/halloween', f.ball, () => {}, { makeMedley: fakeJoin });
+  for (const name of ['01-pumpkin.mp4', '02-ghost.mp4']) {
+    fs.copyFileSync(path.join(f.bundled, 'halloween', name), path.join(f.ball, 'video', name));
+  }
+  assert.equal((await whatsOnBall(store, f.ball)).themeId, 'builtin/halloween');
 });
 
 test('an out-of-date joined video on the ball is not saved again', async () => {

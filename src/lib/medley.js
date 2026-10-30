@@ -3,8 +3,8 @@
 // "Play all" videos: every clip of a theme joined into one file.
 //
 // The ball repeats whichever file it is playing and only moves on when someone presses the dial,
-// so on a door it would show the first clip forever. Putting the joined video first means it
-// cycles through the whole theme on its own, and the single clips are still there for the dial.
+// so on a door it would show one clip forever. Putting the joined video on the ball by itself
+// means it cycles through the whole theme on its own, whichever file the ball would start on.
 //
 // Joined videos are cached in <data>/medleys/<source>--<slug>--<key>.mp4, where key changes
 // whenever the theme's clips change.

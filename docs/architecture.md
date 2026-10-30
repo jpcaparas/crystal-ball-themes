@@ -94,7 +94,7 @@ sequenceDiagram
     end
     App->>Mac: Make or reuse the theme's play-all video
     App->>Ball: Clear old videos from video/
-    App->>Ball: Copy the play-all video, then each clip
+    App->>Ball: Copy the play-all video (or the clip, for a one-clip theme)
     App->>Ball: Read back names and sizes to check
     App-->>Kid: All set!
     Kid->>App: Eject the ball
@@ -150,16 +150,18 @@ Set `CRYSTAL_BALL_DATA_DIR` to use a different data folder (the tests always do)
 
 ## The play-all video
 
-The ball repeats the file it's playing until someone presses a button. So for every theme with two
-or more clips, the app joins the clips into one video and puts it first on the ball as
-`00-<theme>-all.mp4`. The single clips go after it, so the dial can still pick one.
+The ball repeats the file it's playing until someone presses a button, and it doesn't always start
+on the first file. So for every theme with two or more clips, the app joins the clips into one video
+and puts only that on the ball, as `00-<theme>-all.mp4`. A single clip beside it could be the one
+the ball starts on and repeats ([hardware.md](hardware.md#video-format-the-player-accepts)).
 
 - `ensureMedley` in `src/lib/medley.js` makes the video with ffmpeg (re-encoding, so clips from
   different sources join cleanly).
 - It's cached in the data folder under `medleys/`. Its file name includes a key made from the
   theme's clips, so changing a theme makes a fresh one and deletes the old one.
-- If ffmpeg is missing, the clips still go on the ball, and the app explains that only the first
-  clip will repeat.
+- If ffmpeg is missing, the single clips go on the ball instead, and the app explains that one clip
+  will repeat.
+- `whatsOnBall` recognises a theme from its play-all video alone, or from all of its clips.
 
 ## Never losing videos
 

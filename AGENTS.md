@@ -77,8 +77,9 @@ These protect the family's videos and the hardware. Do not work around them.
    `diskutil eject` is fine.
 5. **Match the clip format exactly:** 480×480 H.264 Constrained Baseline level 3.0, yuv420p, 30 fps,
    MP3 128 kb/s 44.1 kHz stereo, always with an audio track. See `src/lib/convert.js`.
-6. **Themes with 2+ clips go on the ball with their joined play-all video first**
-   (`00-<slug>-all.mp4`, `src/lib/medley.js`), because the ball repeats the current file. Keep it.
+6. **Themes with 2+ clips go on the ball as their joined play-all video alone**
+   (`00-<slug>-all.mp4`, `src/lib/medley.js`), because the ball repeats the current file and
+   doesn't always start on the first one. Don't put single clips beside it.
 7. **Delete user content with the Bin** (`shell.trashItem`), never permanently.
 8. **Don't write the ball's firmware** unless the user explicitly asks. A bad write bricks the toy.
    Reading is fine; see `docs/hardware.md`.

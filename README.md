@@ -97,7 +97,7 @@ one file at a time. This app does the whole job, on a Mac, in two clicks.
 | Getting it onto the ball | Find the converted file, open the ball, copy it into `video` | Plug in the ball and press **Show on the ball** |
 | What was already on the ball | Up to you to keep a copy | Saved first, automatically |
 | Copying by hand from a Mac | Finder adds hidden `._` files, which the ball may try to play | Copies without them |
-| The ball repeats one clip until you press the dial | Press the dial for every clip | A "play all" video goes on first |
+| The ball repeats one clip until you press the dial | Press the dial for every clip | The clips go on joined into one long "play all" video |
 | Seeing it before it goes on | No | A round preview on your desktop, with sound |
 | Ready-made content | No | Halloween themes, including characters that talk |
 | Switching between sets of videos | Redo the copying | Pick another theme |
@@ -147,9 +147,9 @@ Deleting a clip or a theme moves it to the Bin, so it can always be recovered.
 | Left | Previous clip | Quieter |
 | Right | Next clip | Louder |
 
-> **Why the first video is long.** The ball repeats whichever clip it's on until someone presses a
-> button. So the app also joins each theme's clips into one long "play all" video and puts it first.
-> The ball then shows everything by itself, and the buttons still skip to single clips.
+> **Why there's only one long video.** The ball repeats whichever clip it's on until someone presses
+> a button, and it doesn't always start on the first one. So the app joins each theme's clips into
+> one long "play all" video and puts only that on the ball. The ball then shows everything by itself.
 
 ## Themes
 
@@ -271,7 +271,7 @@ More diagrams and the full code map are in [docs/architecture.md](docs/architect
 | --- | --- |
 | "No ball connected" | Turn the ball off, plug it in, and hold the middle button until the USB picture shows. |
 | Still nothing | Use another cable (many only charge), and plug straight into the Mac rather than a hub or monitor. |
-| The ball only ever shows the first clip | Put the theme on again. Older versions didn't add the "play all" video. |
+| The ball only ever shows one clip | Put the theme on again. Older versions put the single clips on as well, and the ball could get stuck on one of them. |
 | "Couldn't join the clips" | Install ffmpeg (`brew install ffmpeg`), then press Show on the ball again. |
 | A file won't add | It may be damaged or have no picture. Try a different file. |
 | "Couldn't eject" | Close any Finder window showing the ball, wait a few seconds, and try again. |

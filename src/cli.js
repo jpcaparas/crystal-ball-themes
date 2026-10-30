@@ -56,7 +56,7 @@ async function main([cmd = 'status', ...args]) {
     if (res.saved) console.log(`Saved ${res.saved.count} clips that were on the ball as "${res.saved.name}".`);
     if (res.warning) console.log(res.warning);
     console.log(
-      `Done: ${res.count} clips from "${res.name}" are on the ball${res.playAll ? ', plus a "play all" video first' : ''}.` +
+      `Done: ${res.count} clips from "${res.name}" are on the ball${res.playAll ? ', joined into one "play all" video' : ''}.` +
         ' Run "npm run ball -- eject" before unplugging.',
     );
     return;

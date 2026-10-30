@@ -1,7 +1,7 @@
 {
   "name": "crystal-ball-themes",
   "productName": "Crystal Ball Themes",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Swap themed video sets on a USB 'electronic crystal ball' display (ArtInChip EVDO-M4) without touching its firmware.",
   "private": true,
   "license": "MIT",
